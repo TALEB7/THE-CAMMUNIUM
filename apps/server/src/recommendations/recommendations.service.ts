@@ -20,11 +20,11 @@ export class RecommendationsService {
 
     // Collect user interests / favorite categories
     const interests = user.personalProfile?.interests || [];
-    const favoriteCategoryIds = user.favoriteListings.map((f) => f.listing.categoryId);
-    const bidCategoryIds = user.bids.map((b) => b.auction.listing.categoryId);
+    const favoriteCategoryIds = user.favoriteListings.map((f: any) => f.listing.categoryId);
+    const bidCategoryIds = user.bids.map((b: any) => b.auction.listing.categoryId);
     const allCategoryIds = [...new Set([...favoriteCategoryIds, ...bidCategoryIds])];
     const allTags = [
-      ...new Set(user.favoriteListings.flatMap((f) => f.listing.tags)),
+      ...new Set(user.favoriteListings.flatMap((f: any) => f.listing.tags)),
     ];
 
     // Clear old non-viewed recommendations
@@ -38,14 +38,14 @@ export class RecommendationsService {
         where: { userId },
         select: { listingId: true },
       })
-    ).map((r) => r.listingId);
+    ).map((r: any) => r.listingId);
 
     const ownListingIds = (
       await this.prisma.listing.findMany({
         where: { sellerId: userId },
         select: { id: true },
       })
-    ).map((l) => l.id);
+    ).map((l: any) => l.id);
 
     const excludeIds = [...existingListingIds, ...ownListingIds];
 

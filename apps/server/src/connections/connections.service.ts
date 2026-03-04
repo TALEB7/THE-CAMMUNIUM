@@ -95,7 +95,7 @@ export class ConnectionsService {
     });
 
     // Return the "other" user for each connection
-    return connections.map((c) => ({
+    return connections.map((c: any) => ({
       connectionId: c.id,
       user: c.fromId === userId ? c.to : c.from,
       connectedAt: c.updatedAt,
@@ -158,7 +158,7 @@ export class ConnectionsService {
 
     const connectedIds = new Set<string>();
     connectedIds.add(userId);
-    myConnections.forEach((c) => {
+    myConnections.forEach((c: any) => {
       connectedIds.add(c.fromId);
       connectedIds.add(c.toId);
     });
@@ -171,7 +171,7 @@ export class ConnectionsService {
       },
       select: { fromId: true, toId: true },
     });
-    excluded.forEach((c) => {
+    excluded.forEach((c: any) => {
       connectedIds.add(c.fromId);
       connectedIds.add(c.toId);
     });

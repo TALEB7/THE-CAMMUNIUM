@@ -273,7 +273,7 @@ export class PaymentsService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return payments.map((p) => ({
+    return payments.map((p: any) => ({
       id: p.id,
       amount: p.amount,
       currency: p.currency,

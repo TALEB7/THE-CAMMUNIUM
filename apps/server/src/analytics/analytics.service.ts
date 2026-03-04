@@ -49,7 +49,7 @@ export class AnalyticsService {
       this.prisma.userActivity.groupBy({
         by: ['userId'],
         where: { createdAt: { gte: yesterday } },
-      }).then((r) => r.length),
+      }).then((r: any[]) => r.length),
       this.prisma.listing.count(),
       this.prisma.listing.count({ where: { createdAt: { gte: yesterday } } }),
       this.prisma.auction.count(),
@@ -97,7 +97,7 @@ export class AnalyticsService {
       orderBy: { _count: { action: 'desc' } },
       take: 10,
     });
-    return actions.map((a) => ({ action: a.action, count: a._count.action }));
+    return actions.map((a: any) => ({ action: a.action, count: a._count.action }));
   }
 
   async getRevenueChart(days = 30) {
@@ -181,7 +181,7 @@ export class AnalyticsService {
       where: { userId: user.id },
       select: { conversationId: true },
     });
-    const convIds = conversations.map(c => c.conversationId);
+    const convIds = conversations.map((c: any) => c.conversationId);
     const unreadMessages = convIds.length > 0
       ? await this.prisma.message.count({
           where: {

@@ -61,7 +61,7 @@ export class ComparisonsService {
     if (list.items.length >= 5) {
       throw new BadRequestException('Vous ne pouvez comparer que 5 articles maximum');
     }
-    const exists = list.items.find((i) => i.listingId === listingId);
+    const exists = list.items.find((i: any) => i.listingId === listingId);
     if (exists) {
       throw new BadRequestException('Cet article est déjà dans la liste');
     }

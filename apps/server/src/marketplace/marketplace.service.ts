@@ -171,7 +171,7 @@ export class MarketplaceService {
         include: { children: true },
       });
       if (category) {
-        const categoryIds = [category.id, ...category.children.map((c) => c.id)];
+        const categoryIds = [category.id, ...category.children.map((c: any) => c.id)];
         where.categoryId = { in: categoryIds };
       }
     }
@@ -295,7 +295,7 @@ export class MarketplaceService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return favorites.map((f) => f.listing);
+    return favorites.map((f: any) => f.listing);
   }
 
   // ==================== Reviews ====================

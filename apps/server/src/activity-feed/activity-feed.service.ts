@@ -37,7 +37,7 @@ export class ActivityFeedService {
 
     const connectedUserIds = new Set<string>();
     connectedUserIds.add(userId); // Include own activity
-    connections.forEach((c) => {
+    connections.forEach((c: { fromId: string; toId: string }) => {
       connectedUserIds.add(c.fromId);
       connectedUserIds.add(c.toId);
     });

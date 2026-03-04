@@ -121,7 +121,7 @@ export class BadgesService {
       take: limit,
     });
 
-    return users.map((u, i) => ({
+    return users.map((u: any, i: number) => ({
       rank: i + 1,
       user: {
         id: u.id,
@@ -162,8 +162,8 @@ export class BadgesService {
     });
     if (!user) return [];
 
-    const badges = await this.prisma.badge.findMany({ where: { criteria: { not: Prisma.DbNull } } });
-    const ownedBadgeIds = new Set(user.badges.map((b) => b.badgeId));
+    const badges = await this.prisma.badge.findMany({ where: { criteria: { not: (Prisma as any).DbNull ?? null } } });
+    const ownedBadgeIds = new Set(user.badges.map((b: any) => b.badgeId));
     const awarded: string[] = [];
 
     for (const badge of badges) {

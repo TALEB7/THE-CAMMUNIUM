@@ -47,7 +47,7 @@ export class BookmarksService {
 
     // Enrich with target details
     const enriched = await Promise.all(
-      bookmarks.map(async (bm) => {
+      bookmarks.map(async (bm: any) => {
         let target: any = null;
         try {
           switch (bm.targetType) {

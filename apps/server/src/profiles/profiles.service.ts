@@ -196,7 +196,7 @@ export class ProfilesService {
     ]);
 
     return {
-      data: users.map((user) => ({
+      data: users.map((user: any) => ({
         id: user.id,
         firstName: user.firstName,
         lastName: user.lastName,

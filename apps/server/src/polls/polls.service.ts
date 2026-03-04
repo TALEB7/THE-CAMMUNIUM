@@ -99,7 +99,7 @@ export class PollsService {
     });
     if (!poll || poll.status !== 'ACTIVE') throw new Error('Poll not available');
 
-    const option = poll.options.find((o) => o.id === optionId);
+    const option = poll.options.find((o: any) => o.id === optionId);
     if (!option) throw new Error('Invalid option');
 
     const user = await this.prisma.user.findUnique({ where: { clerkId: userId } });
@@ -112,7 +112,7 @@ export class PollsService {
       });
       if (existingVotes.length > 0) {
         await this.prisma.pollVote.deleteMany({
-          where: { id: { in: existingVotes.map((v) => v.id) } },
+          where: { id: { in: existingVotes.map((v: any) => v.id) } },
         });
         // Decrement counters
         for (const v of existingVotes) {
