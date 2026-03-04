@@ -53,9 +53,10 @@ export default function ListingDetailPage() {
   }
 
   const images = listing.images || [];
+  const reviewList = reviews ?? [];
   const avgRating =
-    reviews?.length > 0
-      ? (reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length).toFixed(1)
+    reviewList.length > 0
+      ? (reviewList.reduce((sum: number, r: any) => sum + r.rating, 0) / reviewList.length).toFixed(1)
       : null;
 
   return (
