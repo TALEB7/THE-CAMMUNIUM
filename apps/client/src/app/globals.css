@@ -1,0 +1,199 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ══════════════════════════════════════════════════════════
+   Yu-Gi-Oh! Master Duel — Light Theme for The Communium
+   Gold accents · Angular shapes · Holographic shimmer
+   ══════════════════════════════════════════════════════════ */
+
+@layer base {
+  :root {
+    --background: 40 20% 97%;
+    --foreground: 228 45% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 228 45% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 228 45% 15%;
+    --primary: 230 65% 25%;
+    --primary-foreground: 45 90% 65%;
+    --secondary: 45 70% 52%;
+    --secondary-foreground: 228 45% 15%;
+    --muted: 40 15% 93%;
+    --muted-foreground: 220 10% 45%;
+    --accent: 45 95% 52%;
+    --accent-foreground: 228 45% 15%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 40 25% 82%;
+    --input: 40 15% 90%;
+    --ring: 45 95% 52%;
+    --radius: 0.25rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading, var(--font-sans, ui-sans-serif, system-ui, sans-serif));
+  }
+}
+
+@layer components {
+  .form-input {
+    @apply w-full rounded border border-input bg-background px-4 py-2.5 text-sm ring-offset-background transition placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  /* ── Yu-Gi-Oh Card with gold border on hover ── */
+  .ygo-card {
+    @apply relative bg-white rounded border shadow-sm transition-all duration-300;
+    border-color: rgba(212, 192, 136, 0.5);
+  }
+  .ygo-card:hover {
+    border-color: #c9a730;
+    box-shadow: 0 0 15px rgba(201, 167, 48, 0.15), 0 4px 20px rgba(0, 0, 0, 0.08);
+  }
+
+  /* ── Holographic shimmer sweep ── */
+  .ygo-shimmer {
+    position: relative;
+    overflow: clip;
+    overflow-clip-margin: 16px;
+  }
+  .ygo-shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      105deg,
+      transparent 40%,
+      rgba(201, 167, 48, 0.06) 45%,
+      rgba(201, 167, 48, 0.12) 50%,
+      rgba(201, 167, 48, 0.06) 55%,
+      transparent 60%
+    );
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+    pointer-events: none;
+  }
+  .ygo-shimmer:hover::after {
+    transform: translateX(100%);
+  }
+
+  /* ── Gold gradient button (angular clip) ── */
+  .ygo-btn-gold {
+    @apply relative inline-flex items-center justify-center px-6 py-2.5 font-semibold text-sm transition-all duration-200;
+    background: linear-gradient(180deg, #e6c200 0%, #c9a730 50%, #b8962a 100%);
+    color: #1a237e;
+    border: 1px solid #c9a730;
+    clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  }
+  .ygo-btn-gold:hover {
+    background: linear-gradient(180deg, #ffd700 0%, #e6c200 50%, #c9a730 100%);
+    box-shadow: 0 0 12px rgba(201, 167, 48, 0.4);
+  }
+
+  /* ── Navy gradient button (angular clip) ── */
+  .ygo-btn-blue {
+    @apply relative inline-flex items-center justify-center px-6 py-2.5 font-semibold text-sm transition-all duration-200;
+    background: linear-gradient(180deg, #3949ab 0%, #283593 50%, #1a237e 100%);
+    color: #e8eaf6;
+    border: 1px solid #3949ab;
+    clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  }
+  .ygo-btn-blue:hover {
+    background: linear-gradient(180deg, #5c6bc0 0%, #3949ab 50%, #283593 100%);
+    box-shadow: 0 0 12px rgba(57, 73, 171, 0.4);
+  }
+
+  /* ── Token / Tks coin display ── */
+  .ygo-tokens {
+    @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-bold;
+    background: linear-gradient(135deg, #fff8e1, #ffecb3);
+    color: #8d6e00;
+    border: 1px solid #e6c200;
+  }
+
+  /* ── HUD stat card with top accent stripe ── */
+  .ygo-stat {
+    @apply relative px-4 py-3 bg-white rounded border;
+    border-color: rgba(212, 192, 136, 0.5);
+    background: linear-gradient(135deg, #ffffff 0%, #faf8f0 100%);
+  }
+  .ygo-stat::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #1a237e, #c9a730);
+  }
+
+  /* ── Gold accent divider line ── */
+  .ygo-accent-line {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #c9a730, transparent);
+  }
+
+  /* ── Section title with gold left bar ── */
+  .ygo-section-title {
+    @apply relative text-lg font-bold tracking-wide uppercase;
+    color: #1a237e;
+    padding-left: 12px;
+  }
+  .ygo-section-title::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 2px;
+    bottom: 2px;
+    width: 4px;
+    background: linear-gradient(180deg, #c9a730, #e6c200);
+  }
+
+  /* ── Rarity badge styles ── */
+  .rarity-normal {
+    @apply bg-gray-100 text-gray-700 border border-gray-300;
+  }
+  .rarity-rare {
+    @apply bg-blue-50 text-blue-800 border border-blue-400;
+    box-shadow: 0 0 6px rgba(59, 130, 246, 0.2);
+  }
+  .rarity-super {
+    background: linear-gradient(135deg, #e8eaf6, #c5cae9);
+    @apply text-indigo-900 border border-indigo-400;
+    box-shadow: 0 0 8px rgba(99, 102, 241, 0.2);
+  }
+  .rarity-ultra {
+    background: linear-gradient(135deg, #fff8e1, #ffecb3);
+    @apply text-amber-900 border border-amber-500;
+    box-shadow: 0 0 10px rgba(201, 167, 48, 0.3);
+  }
+
+  /* ── Navigation active tab with gold underline ── */
+  .ygo-nav-active {
+    @apply relative font-semibold;
+    color: #1a237e;
+  }
+  .ygo-nav-active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #c9a730, #e6c200, #c9a730);
+  }
+
+  /* ── Angular banner clip ── */
+  .ygo-banner {
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 20px), 0 100%);
+  }
+}

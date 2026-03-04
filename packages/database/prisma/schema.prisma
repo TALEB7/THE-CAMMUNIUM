@@ -1,0 +1,1477 @@
+// =============================================
+// The Communium - Prisma Database Schema
+// Phase 1: Auth, Profiles, Payments, Tks Tokens
+// =============================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== USER ====================
+
+model User {
+  id          String   @id @default(cuid())
+  clerkId     String   @unique
+  email       String   @unique
+  firstName   String?
+  lastName    String?
+  avatarUrl   String?
+  accountType String   @default("personal") // personal | business | company_creation
+  role        String   @default("USER") // USER | ADMIN | MODERATOR
+  status      String   @default("ACTIVE") // ACTIVE | BANNED | SUSPENDED
+  isVerified  Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  profileViews Int     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  personalProfile PersonalProfile?
+  businessProfile BusinessProfile?
+  membership      Membership?
+  tksWallet       TksWallet?
+  tksTransactions TksTransaction[]
+  payments        Payment[]
+
+  // Phase 2 Relations
+  listings        Listing[]
+  auctions        Auction[]
+  bids            Bid[]
+  favoriteListings FavoriteListing[]
+  listingReviews  ListingReview[]
+  // Phase 3 Relations
+  conversations     ConversationParticipant[]
+  messagesSent      Message[]
+  messageReadReceipts MessageReadReceipt[]
+  notifications     Notification[]
+  notificationPrefs NotificationPreference?
+  mentorProfile     MentorProfile?
+  mentorshipRequests MentorshipRequest[]
+  mentorshipSessions MentorshipSession[]    @relation()
+  mentorshipReviews MentorshipReview[]
+  adminLogs         AdminLog[]
+  reportsMade       Report[]               @relation("ReportsMade")
+  reportsResolved   Report[]               @relation("ReportsResolved")
+  userActivities    UserActivity[]
+
+  // Phase 4 Relations
+  savedSearches     SavedSearch[]
+  priceAlerts       PriceAlert[]
+  recommendations   Recommendation[]
+  companyCreation   CompanyCreation?
+  documents         Document[]
+  comparisonLists   ComparisonList[]
+
+  // Phase 5 Relations
+  forumPosts        ForumPost[]
+  forumComments     ForumComment[]
+  forumLikes        ForumLike[]
+  eventsCreated     Event[]
+  eventRsvps        EventRsvp[]
+  groupsOwned       Group[]            @relation("GroupOwner")
+  groupMemberships  GroupMember[]
+  groupPosts        GroupPost[]
+  groupComments     GroupComment[]
+  hostedMeetings       GroupMeeting[]            @relation("MeetingHost")
+  meetingParticipations GroupMeetingParticipant[] @relation("MeetingParticipant")
+  connectionsInitiated Connection[]    @relation("ConnectionFrom")
+  connectionsReceived  Connection[]    @relation("ConnectionTo")
+  activityFeedItems    ActivityFeedItem[]
+
+  // Phase 6 Relations
+  badges            UserBadge[]
+  pollVotes         PollVote[]
+  bookmarks         Bookmark[]
+  announcementsRead AnnouncementRead[]
+
+  // Phase 7 Relations
+  testimonials      Testimonial[]
+
+  @@map("users")
+}
+
+// ==================== PERSONAL PROFILE ====================
+
+model PersonalProfile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  firstName      String?
+  lastName       String?
+  birthday       String?
+  identityType   String?  // cin | passport
+  identityNumber String?
+  phone          String?
+  email          String?
+  country        String?  @default("Maroc")
+  city           String?
+  address        String?
+  profession     String?
+  photoUrl       String?
+  workHistory    Json?    // Array of {title, company, startDate, endDate}
+  interests      String[] // Array of interest tags
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("personal_profiles")
+}
+
+// ==================== BUSINESS PROFILE ====================
+
+model BusinessProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  companyName  String?
+  rc           String?  // Registre de Commerce
+  creationDate String?
+  phone        String?
+  email        String?
+  country      String?  @default("Maroc")
+  city         String?
+  address      String?
+  activities   String?
+  ice          String?  // Identifiant Commun de l'Entreprise
+  ifNumber     String?  // Identifiant Fiscal
+  logoUrl      String?
+  interests    String[] // Array of interest tags
+  projects     Json?    // Array of {name, description, url}
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("business_profiles")
+}
+
+// ==================== MEMBERSHIP ====================
+
+model Membership {
+  id        String    @id @default(cuid())
+  userId    String    @unique
+  plan      String    // personal_premium | business_premium | company_creation
+  status    String    @default("ACTIVE") // ACTIVE | EXPIRED | CANCELED
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("memberships")
+}
+
+// ==================== PAYMENTS ====================
+
+model Payment {
+  id          String   @id @default(cuid())
+  userId      String
+  amount      Float
+  currency    String   @default("MAD")
+  provider    String   // STRIPE | CMI
+  providerRef String?  // External transaction ID
+  status      String   @default("PENDING") // PENDING | COMPLETED | FAILED | REFUNDED
+  planId      String?
+  vatAmount   Float?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([providerRef])
+  @@map("payments")
+}
+
+// ==================== TKS TOKENS ====================
+
+model TksWallet {
+  id          String @id @default(cuid())
+  userId      String @unique
+  balance     Int    @default(0)
+  totalEarned Int    @default(0)
+  totalSpent  Int    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("tks_wallets")
+}
+
+model TksTransaction {
+  id        String   @id @default(cuid())
+  userId    String
+  amount    Int      // Positive = earned, Negative = spent
+  type      String   // EARNED | SPENT
+  reason    String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("tks_transactions")
+}
+
+// ===========================================================
+// Phase 2: Marketplace & Auctions
+// ===========================================================
+
+// ==================== CATEGORY ====================
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  icon        String?
+  parentId    String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryTree")
+  listings Listing[]
+  savedSearches SavedSearch[]
+
+  @@map("categories")
+}
+
+// ==================== LISTING (Marketplace) ====================
+
+model Listing {
+  id          String   @id @default(cuid())
+  sellerId    String
+  categoryId  String
+  title       String
+  slug        String   @unique
+  description String
+  price       Float
+  currency    String   @default("MAD")
+  condition   String   @default("new") // new | like_new | good | fair
+  status      String   @default("DRAFT") // DRAFT | ACTIVE | SOLD | EXPIRED | REPORTED
+  location    String?
+  city        String?
+  images      String[] // Array of image URLs
+  tags        String[]
+  viewCount   Int      @default(0)
+  isBoosted   Boolean  @default(false)
+  boostedUntil DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  seller    User      @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  category  Category  @relation(fields: [categoryId], references: [id])
+  favorites FavoriteListing[]
+  reviews   ListingReview[]
+  auction   Auction?
+  priceAlerts     PriceAlert[]
+  recommendations Recommendation[]
+  comparisonItems ComparisonItem[]
+
+  @@index([sellerId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([price])
+  @@map("listings")
+}
+
+// ==================== FAVORITE LISTING ====================
+
+model FavoriteListing {
+  id        String   @id @default(cuid())
+  userId    String
+  listingId String
+  createdAt DateTime @default(now())
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@map("favorite_listings")
+}
+
+// ==================== LISTING REVIEW ====================
+
+model ListingReview {
+  id        String   @id @default(cuid())
+  listingId String
+  reviewerId String
+  rating    Int      // 1-5
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  listing  Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  reviewer User    @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, reviewerId])
+  @@map("listing_reviews")
+}
+
+// ==================== AUCTION ====================
+
+model Auction {
+  id            String   @id @default(cuid())
+  listingId     String   @unique
+  sellerId      String
+  startingPrice Float
+  reservePrice  Float?   // Minimum price for sale to go through
+  currentPrice  Float
+  minIncrement  Float    @default(10) // Minimum bid increment in MAD
+  status        String   @default("SCHEDULED") // SCHEDULED | ACTIVE | ENDED | CANCELED
+  startTime     DateTime
+  endTime       DateTime
+  winnerId      String?
+  totalBids     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  seller  User    @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  bids    Bid[]
+
+  @@index([sellerId])
+  @@index([status])
+  @@index([endTime])
+  @@map("auctions")
+}
+
+// ==================== BID ====================
+
+model Bid {
+  id        String   @id @default(cuid())
+  auctionId String
+  bidderId  String
+  amount    Float
+  isWinning Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  // Relations
+  auction Auction @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  bidder  User    @relation(fields: [bidderId], references: [id], onDelete: Cascade)
+
+  @@index([auctionId])
+  @@index([bidderId])
+  @@map("bids")
+}
+
+// ===========================================================
+// Phase 3: Messaging, Notifications, Mentorship, Admin
+// ===========================================================
+
+// ==================== CONVERSATIONS & MESSAGES ====================
+
+model Conversation {
+  id           String    @id @default(cuid())
+  type         String    @default("DIRECT") // DIRECT | GROUP
+  title        String?   // For group conversations
+  lastMessage  String?
+  lastActivity DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@index([lastActivity])
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id              String    @id @default(cuid())
+  conversationId  String
+  userId          String
+  role            String    @default("MEMBER") // MEMBER | ADMIN
+  lastReadAt      DateTime?
+  isArchived      Boolean   @default(false)
+  isMuted         Boolean   @default(false)
+  joinedAt        DateTime  @default(now())
+
+  // Relations
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id              String    @id @default(cuid())
+  conversationId  String
+  senderId        String
+  content         String
+  type            String    @default("TEXT") // TEXT | IMAGE | FILE | SYSTEM
+  fileUrl         String?
+  fileName        String?
+  isEdited        Boolean   @default(false)
+  isDeleted       Boolean   @default(false)
+  replyToId       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  replyTo      Message?     @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies      Message[]    @relation("MessageReplies")
+  readReceipts MessageReadReceipt[]
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+  @@map("messages")
+}
+
+model MessageReadReceipt {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  readAt    DateTime @default(now())
+
+  // Relations
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@map("message_read_receipts")
+}
+
+// ==================== NOTIFICATIONS ====================
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String    // MESSAGE | BID | AUCTION_WON | AUCTION_ENDED | LISTING_SOLD | MENTORSHIP_REQUEST | MENTORSHIP_SESSION | PAYMENT | SYSTEM | ADMIN
+  title     String
+  body      String
+  data      Json?     // Extra payload (e.g., listingId, auctionId, etc.)
+  isRead    Boolean   @default(false)
+  readAt    DateTime?
+  channel   String    @default("IN_APP") // IN_APP | EMAIL | PUSH
+  createdAt DateTime  @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id                  String  @id @default(cuid())
+  userId              String  @unique
+  emailMessages       Boolean @default(true)
+  emailBids           Boolean @default(true)
+  emailAuctions       Boolean @default(true)
+  emailMentorship     Boolean @default(true)
+  emailNewsletter     Boolean @default(true)
+  pushMessages        Boolean @default(true)
+  pushBids            Boolean @default(true)
+  pushAuctions        Boolean @default(true)
+  pushMentorship      Boolean @default(true)
+  inAppMessages       Boolean @default(true)
+  inAppBids           Boolean @default(true)
+  inAppAuctions       Boolean @default(true)
+  inAppMentorship     Boolean @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
+}
+
+// ==================== MENTORSHIP ====================
+
+model MentorProfile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  headline      String?
+  bio           String?
+  expertise     String[] // Array of expertise tags
+  industries    String[] // Array of industry tags
+  yearsExp      Int?
+  hourlyRate    Int?     // In Tks tokens
+  maxMentees    Int      @default(5)
+  activeMentees Int      @default(0)
+  isAvailable   Boolean  @default(true)
+  isVerified    Boolean  @default(false)
+  rating        Float    @default(0)
+  totalReviews  Int      @default(0)
+  totalSessions Int      @default(0)
+  languages     String[] @default(["Francais", "Arabe"])
+  availability  Json?    // { monday: [{start: "09:00", end: "12:00"}], ... }
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions MentorshipSession[]
+  reviews  MentorshipReview[]
+  requests MentorshipRequest[]
+
+  @@map("mentor_profiles")
+}
+
+model MentorshipRequest {
+  id          String   @id @default(cuid())
+  mentorId    String
+  menteeId    String
+  message     String?
+  goals       String?
+  status      String   @default("PENDING") // PENDING | ACCEPTED | DECLINED | CANCELED
+  respondedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  mentor  MentorProfile @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  mentee  User          @relation(fields: [menteeId], references: [id], onDelete: Cascade)
+
+  @@unique([mentorId, menteeId])
+  @@index([menteeId])
+  @@map("mentorship_requests")
+}
+
+model MentorshipSession {
+  id          String    @id @default(cuid())
+  mentorId    String
+  menteeId    String
+  title       String
+  description String?
+  scheduledAt DateTime
+  duration    Int       @default(60) // Duration in minutes
+  status      String    @default("SCHEDULED") // SCHEDULED | IN_PROGRESS | COMPLETED | CANCELED | NO_SHOW
+  meetingUrl  String?
+  notes       String?
+  tksCost     Int       @default(0)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  mentor  MentorProfile @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  mentee  User          @relation(fields: [menteeId], references: [id], onDelete: Cascade)
+
+  @@index([mentorId])
+  @@index([menteeId])
+  @@index([scheduledAt])
+  @@map("mentorship_sessions")
+}
+
+model MentorshipReview {
+  id        String   @id @default(cuid())
+  mentorId  String
+  menteeId  String
+  rating    Int      // 1-5
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  mentor MentorProfile @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  mentee User          @relation(fields: [menteeId], references: [id], onDelete: Cascade)
+
+  @@unique([mentorId, menteeId])
+  @@map("mentorship_reviews")
+}
+
+// ==================== ADMIN & ANALYTICS ====================
+
+model AdminLog {
+  id        String   @id @default(cuid())
+  adminId   String
+  action    String   // USER_BANNED | USER_VERIFIED | LISTING_REMOVED | AUCTION_CANCELED | SETTING_CHANGED | etc.
+  target    String?  // Target entity type (USER | LISTING | AUCTION | etc.)
+  targetId  String?  // Target entity ID
+  details   Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  // Relations
+  admin User @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("admin_logs")
+}
+
+model Report {
+  id          String    @id @default(cuid())
+  reporterId  String
+  targetType  String    // USER | LISTING | AUCTION | MESSAGE
+  targetId    String
+  reason      String    // SPAM | FRAUD | INAPPROPRIATE | FAKE | OTHER
+  description String?
+  status      String    @default("PENDING") // PENDING | REVIEWING | RESOLVED | DISMISSED
+  resolvedBy  String?
+  resolvedAt  DateTime?
+  resolution  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  reporter User @relation("ReportsMade", fields: [reporterId], references: [id], onDelete: Cascade)
+  resolver User? @relation("ReportsResolved", fields: [resolvedBy], references: [id])
+
+  @@index([reporterId])
+  @@index([targetType, targetId])
+  @@index([status])
+  @@map("reports")
+}
+
+model PlatformAnalytics {
+  id              String   @id @default(cuid())
+  date            DateTime @unique @db.Date
+  totalUsers      Int      @default(0)
+  newUsers        Int      @default(0)
+  activeUsers     Int      @default(0)
+  totalListings   Int      @default(0)
+  newListings     Int      @default(0)
+  totalAuctions   Int      @default(0)
+  activeAuctions  Int      @default(0)
+  totalBids       Int      @default(0)
+  totalMessages   Int      @default(0)
+  totalSessions   Int      @default(0) // Mentorship sessions
+  totalRevenue    Float    @default(0)
+  totalTksCirculating Int  @default(0)
+  createdAt       DateTime @default(now())
+
+  @@map("platform_analytics")
+}
+
+model UserActivity {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String   // LOGIN | PROFILE_VIEW | LISTING_VIEW | BID_PLACED | MESSAGE_SENT | SEARCH | etc.
+  metadata  Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([action])
+  @@index([createdAt])
+  @@map("user_activities")
+}
+
+// ===========================================================
+// Phase 4: Search, Recommendations, Company Creation, Documents
+// ===========================================================
+
+// ==================== SAVED SEARCH ====================
+
+model SavedSearch {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  query       String?
+  categoryId  String?
+  minPrice    Float?
+  maxPrice    Float?
+  city        String?
+  condition   String?
+  sortBy      String?  @default("createdAt")
+  alertEnabled Boolean @default(true)
+  lastAlertAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id])
+
+  @@index([userId])
+  @@index([alertEnabled])
+  @@map("saved_searches")
+}
+
+// ==================== PRICE ALERT ====================
+
+model PriceAlert {
+  id          String    @id @default(cuid())
+  userId      String
+  listingId   String
+  targetPrice Float
+  isTriggered Boolean   @default(false)
+  triggeredAt DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@index([listingId, isActive])
+  @@map("price_alerts")
+}
+
+// ==================== RECOMMENDATION ====================
+
+model Recommendation {
+  id          String   @id @default(cuid())
+  userId      String
+  listingId   String
+  score       Float    @default(0) // Relevance score 0-1
+  reason      String   // INTEREST_MATCH | CATEGORY_HISTORY | SIMILAR_USERS | TRENDING | BOOSTED
+  isViewed    Boolean  @default(false)
+  isDismissed Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@index([userId, isViewed, isDismissed])
+  @@index([score])
+  @@map("recommendations")
+}
+
+// ==================== COMPANY CREATION ====================
+
+model CompanyCreation {
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  status         String    @default("DRAFT") // DRAFT | STEP_1 | STEP_2 | STEP_3 | STEP_4 | SUBMITTED | UNDER_REVIEW | APPROVED | REJECTED
+  currentStep    Int       @default(1) // 1-4
+
+  // Step 1: Legal Form
+  legalForm      String?   // SARL | SA | SAS | SNC | Auto-entrepreneur
+  companyName    String?
+  tradeName      String?
+  businessSector String?
+
+  // Step 2: RC & Tax Registration
+  rcNumber       String?
+  iceNumber      String?
+  ifNumber       String?
+  cnssNumber     String?
+  taxRegime      String?   // IR | IS
+
+  // Step 3: Bank & Capital
+  bankName       String?
+  bankAgency     String?
+  accountNumber  String?
+  capital        Float?
+  capitalCurrency String?  @default("MAD")
+
+  // Step 4: Address & Contact
+  legalAddress   String?
+  city           String?
+  postalCode     String?
+  phone          String?
+  email          String?
+  website        String?
+
+  // Review
+  reviewNotes    String?
+  reviewedBy     String?
+  reviewedAt     DateTime?
+  submittedAt    DateTime?
+  approvedAt     DateTime?
+  rejectedAt     DateTime?
+  rejectionReason String?
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents  Document[]
+
+  @@map("company_creations")
+}
+
+// ==================== DOCUMENT ====================
+
+model Document {
+  id                String    @id @default(cuid())
+  userId            String
+  companyCreationId String?
+  type              String    // CIN | PASSPORT | RC_CERTIFICATE | ICE_CERTIFICATE | TAX_CERT | BANK_CERT | CONTRACT | OTHER
+  name              String
+  fileUrl           String
+  fileSize          Int?      // Size in bytes
+  mimeType          String?
+  status            String    @default("PENDING") // PENDING | VERIFIED | REJECTED
+  verifiedBy        String?
+  verifiedAt        DateTime?
+  rejectionReason   String?
+  expiresAt         DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyCreation CompanyCreation? @relation(fields: [companyCreationId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([companyCreationId])
+  @@index([type, status])
+  @@map("documents")
+}
+
+// ==================== LISTING COMPARISON ====================
+
+model ComparisonList {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String   @default("Ma comparaison")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items ComparisonItem[]
+
+  @@index([userId])
+  @@map("comparison_lists")
+}
+
+model ComparisonItem {
+  id               String   @id @default(cuid())
+  comparisonListId String
+  listingId        String
+  addedAt          DateTime @default(now())
+
+  // Relations
+  comparisonList ComparisonList @relation(fields: [comparisonListId], references: [id], onDelete: Cascade)
+  listing        Listing        @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([comparisonListId, listingId])
+  @@map("comparison_items")
+}
+
+// ===========================================================
+// Phase 5: Social & Community Features
+// ===========================================================
+
+// ==================== FORUMS ====================
+
+model Forum {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  icon        String?
+  color       String?  @default("#1a237e")
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  postCount   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  posts ForumPost[]
+
+  @@map("forums")
+}
+
+model ForumPost {
+  id          String    @id @default(cuid())
+  forumId     String
+  authorId    String
+  title       String
+  slug        String    @unique
+  content     String
+  isPinned    Boolean   @default(false)
+  isLocked    Boolean   @default(false)
+  viewCount   Int       @default(0)
+  likeCount   Int       @default(0)
+  commentCount Int      @default(0)
+  tags        String[]
+  status      String    @default("PUBLISHED") // DRAFT | PUBLISHED | HIDDEN | REPORTED
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  forum    Forum          @relation(fields: [forumId], references: [id], onDelete: Cascade)
+  author   User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments ForumComment[]
+  likes    ForumLike[]
+
+  @@index([forumId, createdAt])
+  @@index([authorId])
+  @@index([slug])
+  @@map("forum_posts")
+}
+
+model ForumComment {
+  id        String    @id @default(cuid())
+  postId    String
+  authorId  String
+  content   String
+  parentId  String?   // For nested replies
+  likeCount Int       @default(0)
+  isEdited  Boolean   @default(false)
+  status    String    @default("VISIBLE") // VISIBLE | HIDDEN | REPORTED
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relations
+  post     ForumPost     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author   User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent   ForumComment? @relation("CommentReplies", fields: [parentId], references: [id])
+  replies  ForumComment[] @relation("CommentReplies")
+
+  @@index([postId, createdAt])
+  @@index([authorId])
+  @@map("forum_comments")
+}
+
+model ForumLike {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  // Relations
+  post ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@map("forum_likes")
+}
+
+// ==================== EVENTS ====================
+
+model Event {
+  id            String    @id @default(cuid())
+  organizerId   String
+  title         String
+  slug          String    @unique
+  description   String
+  coverImage    String?
+  eventType     String    @default("IN_PERSON") // IN_PERSON | ONLINE | HYBRID
+  category      String?   // NETWORKING | WORKSHOP | CONFERENCE | MEETUP | WEBINAR
+  location      String?   // Physical address
+  city          String?
+  onlineUrl     String?   // For online/hybrid events
+  startDate     DateTime
+  endDate       DateTime
+  maxAttendees  Int?
+  currentAttendees Int    @default(0)
+  price         Float?    @default(0) // 0 = free
+  currency      String    @default("MAD")
+  status        String    @default("UPCOMING") // UPCOMING | LIVE | ENDED | CANCELED
+  isPublic      Boolean   @default(true)
+  tags          String[]
+  viewCount     Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  organizer User       @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  rsvps     EventRsvp[]
+
+  @@index([organizerId])
+  @@index([startDate])
+  @@index([status])
+  @@index([city])
+  @@map("events")
+}
+
+model EventRsvp {
+  id        String    @id @default(cuid())
+  eventId   String
+  userId    String
+  status    String    @default("GOING") // GOING | INTERESTED | NOT_GOING | WAITLISTED
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relations
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([userId])
+  @@map("event_rsvps")
+}
+
+// ==================== GROUPS / COMMUNITIES ====================
+
+model Group {
+  id           String   @id @default(cuid())
+  ownerId      String
+  name         String
+  slug         String   @unique
+  description  String?
+  coverImage   String?
+  avatarUrl    String?
+  category     String?  // BUSINESS | TECH | MARKETING | FINANCE | LEGAL | HEALTH | OTHER
+  isPublic     Boolean  @default(true)
+  memberCount  Int      @default(1)
+  postCount    Int      @default(0)
+  rules        String?
+  status       String   @default("ACTIVE") // ACTIVE | ARCHIVED | BANNED
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  owner    User          @relation("GroupOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members  GroupMember[]
+  posts    GroupPost[]
+  meetings GroupMeeting[]
+
+  @@index([ownerId])
+  @@index([slug])
+  @@map("groups")
+}
+
+model GroupMember {
+  id       String   @id @default(cuid())
+  groupId  String
+  userId   String
+  role     String   @default("MEMBER") // MEMBER | MODERATOR | ADMIN
+  joinedAt DateTime @default(now())
+
+  // Relations
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([userId])
+  @@map("group_members")
+}
+
+model GroupPost {
+  id          String   @id @default(cuid())
+  groupId     String
+  authorId    String
+  content     String
+  images      String[]
+  isPinned    Boolean  @default(false)
+  likeCount   Int      @default(0)
+  commentCount Int     @default(0)
+  status      String   @default("VISIBLE") // VISIBLE | HIDDEN | REPORTED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  group    Group          @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  author   User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments GroupComment[]
+
+  @@index([groupId, createdAt])
+  @@index([authorId])
+  @@map("group_posts")
+}
+
+model GroupComment {
+  id        String   @id @default(cuid())
+  postId    String
+  authorId  String
+  content   String
+  parentId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  post    GroupPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author  User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent  GroupComment?  @relation("GroupCommentReplies", fields: [parentId], references: [id])
+  replies GroupComment[] @relation("GroupCommentReplies")
+
+  @@index([postId, createdAt])
+  @@map("group_comments")
+}
+
+// ==================== CONNECTIONS (Follow / Connect) ====================
+
+model Connection {
+  id        String   @id @default(cuid())
+  fromId    String
+  toId      String
+  status    String   @default("PENDING") // PENDING | ACCEPTED | REJECTED | BLOCKED
+  message   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  from User @relation("ConnectionFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  to   User @relation("ConnectionTo", fields: [toId], references: [id], onDelete: Cascade)
+
+  @@unique([fromId, toId])
+  @@index([toId, status])
+  @@map("connections")
+}
+
+// ==================== ACTIVITY FEED ====================
+
+model ActivityFeedItem {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // POST | LISTING | AUCTION | EVENT | CONNECTION | GROUP_JOIN | MENTORSHIP | ACHIEVEMENT
+  title     String
+  body      String?
+  entityType String? // ForumPost | Listing | Event | Group | etc.
+  entityId  String?
+  imageUrl  String?
+  metadata  Json?
+  isPublic  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([type])
+  @@index([createdAt])
+  @@map("activity_feed_items")
+}
+
+// ===========================================================
+// Phase 6: Badges, Polls, Bookmarks, Announcements, FAQ
+// ===========================================================
+
+// ==================== BADGES & GAMIFICATION ====================
+
+model Badge {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  icon        String?  // Emoji or icon name
+  color       String?  @default("#c9a730")
+  category    String   @default("GENERAL") // GENERAL | COMMUNITY | COMMERCE | MENTORSHIP | ACHIEVEMENT
+  xpReward    Int      @default(0) // XP granted when earned
+  criteria    Json?    // Auto-award rules: { type: "forum_posts", threshold: 10 }
+  isSecret    Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  users UserBadge[]
+
+  @@map("badges")
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  badgeId   String
+  awardedAt DateTime @default(now())
+  awardedBy String?  // null = auto-awarded, otherwise admin ID
+
+  // Relations
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+  @@map("user_badges")
+}
+
+// ==================== POLLS ====================
+
+model Poll {
+  id          String   @id @default(cuid())
+  authorId    String
+  question    String
+  description String?
+  context     String?  // FORUM | GROUP | STANDALONE
+  contextId   String?  // forumPostId or groupId
+  isMultiple  Boolean  @default(false) // Allow multiple choices
+  isAnonymous Boolean  @default(false)
+  endsAt      DateTime?
+  status      String   @default("ACTIVE") // ACTIVE | CLOSED | ARCHIVED
+  totalVotes  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  options PollOption[]
+
+  @@index([authorId])
+  @@index([status])
+  @@map("polls")
+}
+
+model PollOption {
+  id        String @id @default(cuid())
+  pollId    String
+  text      String
+  voteCount Int    @default(0)
+  sortOrder Int    @default(0)
+
+  // Relations
+  poll  Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  votes PollVote[]
+
+  @@index([pollId])
+  @@map("poll_options")
+}
+
+model PollVote {
+  id        String   @id @default(cuid())
+  optionId  String
+  userId    String
+  createdAt DateTime @default(now())
+
+  // Relations
+  option PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([optionId, userId])
+  @@index([userId])
+  @@map("poll_votes")
+}
+
+// ==================== BOOKMARKS ====================
+
+model Bookmark {
+  id         String   @id @default(cuid())
+  userId     String
+  targetType String   // LISTING | FORUM_POST | EVENT | GROUP | POLL
+  targetId   String
+  note       String?  // Personal note
+  createdAt  DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, targetType, targetId])
+  @@index([userId, targetType])
+  @@map("bookmarks")
+}
+
+// ==================== ANNOUNCEMENTS ====================
+
+model Announcement {
+  id          String    @id @default(cuid())
+  authorId    String    // Admin ID
+  title       String
+  content     String
+  type        String    @default("INFO") // INFO | UPDATE | MAINTENANCE | PROMOTION | URGENT
+  priority    Int       @default(0) // Higher = more important
+  isPinned    Boolean   @default(false)
+  isPublished Boolean   @default(false)
+  publishedAt DateTime?
+  expiresAt   DateTime?
+  targetAudience String? // ALL | PREMIUM | BUSINESS | NEW_USERS
+  imageUrl    String?
+  linkUrl     String?
+  linkLabel   String?
+  viewCount   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  reads AnnouncementRead[]
+
+  @@index([isPublished, publishedAt])
+  @@index([type])
+  @@map("announcements")
+}
+
+model AnnouncementRead {
+  id             String   @id @default(cuid())
+  announcementId String
+  userId         String
+  readAt         DateTime @default(now())
+
+  // Relations
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, userId])
+  @@map("announcement_reads")
+}
+
+// ==================== FAQ / HELP CENTER ====================
+
+model FaqCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  icon        String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  items FaqItem[]
+
+  @@map("faq_categories")
+}
+
+model FaqItem {
+  id         String   @id @default(cuid())
+  categoryId String
+  question   String
+  answer     String
+  slug       String   @unique
+  sortOrder  Int      @default(0)
+  isPublished Boolean @default(true)
+  viewCount  Int      @default(0)
+  helpfulYes Int      @default(0)
+  helpfulNo  Int      @default(0)
+  tags       String[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  category FaqCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId])
+  @@index([slug])
+  @@map("faq_items")
+}
+
+// ===========================================================
+// Phase 7: Platform Polish & Final Features
+// ===========================================================
+
+// ==================== TESTIMONIALS ====================
+
+model Testimonial {
+  id          String   @id @default(cuid())
+  authorId    String
+  content     String
+  rating      Int      @default(5) // 1-5
+  role        String?  // "Entrepreneur", "Freelance", etc.
+  company     String?
+  isApproved  Boolean  @default(false)
+  isFeatured  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([isApproved, isFeatured])
+  @@map("testimonials")
+}
+
+// ==================== NEWSLETTER ====================
+
+model NewsletterSubscriber {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  firstName    String?
+  lastName     String?
+  userId       String?   // Optional link to user
+  status       String    @default("ACTIVE") // ACTIVE | UNSUBSCRIBED
+  subscribedAt DateTime  @default(now())
+  unsubscribedAt DateTime?
+
+  @@index([status])
+  @@map("newsletter_subscribers")
+}
+
+model NewsletterCampaign {
+  id          String    @id @default(cuid())
+  subject     String
+  content     String
+  previewText String?
+  status      String    @default("DRAFT") // DRAFT | SCHEDULED | SENT
+  sentAt      DateTime?
+  scheduledAt DateTime?
+  recipientCount Int    @default(0)
+  openCount   Int       @default(0)
+  clickCount  Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("newsletter_campaigns")
+}
+
+// ==================== CONTACT MESSAGES ====================
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  subject   String
+  message   String
+  status    String   @default("NEW") // NEW | READ | REPLIED | ARCHIVED
+  userId    String?  // Optional link if logged-in user
+  repliedAt DateTime?
+  replyContent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@map("contact_messages")
+}
+
+// ===========================================================
+// Phase 8: Video Meetings
+// ===========================================================
+
+model GroupMeeting {
+  id              String    @id @default(cuid())
+  groupId         String
+  hostId          String
+  title           String
+  status          String    @default("WAITING") // WAITING | LIVE | ENDED
+  startedAt       DateTime?
+  endedAt         DateTime?
+  maxParticipants Int       @default(10)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  group        Group                    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  host         User                     @relation("MeetingHost", fields: [hostId], references: [id])
+  participants GroupMeetingParticipant[]
+
+  @@index([groupId])
+  @@index([hostId])
+  @@index([status])
+  @@map("group_meetings")
+}
+
+model GroupMeetingParticipant {
+  id        String    @id @default(cuid())
+  meetingId String
+  userId    String
+  joinedAt  DateTime  @default(now())
+  leftAt    DateTime?
+
+  // Relations
+  meeting GroupMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  user    User         @relation("MeetingParticipant", fields: [userId], references: [id])
+
+  @@unique([meetingId, userId])
+  @@index([meetingId])
+  @@map("group_meeting_participants")
+}
+

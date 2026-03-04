@@ -1,0 +1,30 @@
+{
+  "name": "the-communium",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The Communium - Professional Networking Platform for Morocco",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "db:generate": "pnpm --filter @communium/database generate",
+    "db:push": "pnpm --filter @communium/database push",
+    "db:migrate": "pnpm --filter @communium/database migrate",
+    "db:seed": "pnpm --filter @communium/database seed",
+    "db:studio": "pnpm --filter @communium/database studio",
+    "clean": "turbo clean && rimraf node_modules"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "prettier": "^3.2.0",
+    "rimraf": "^5.0.5",
+    "turbo": "^2.0.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@9.1.0"
+}
