@@ -115,7 +115,7 @@ export function ReviewSection({
           </div>
         ))}
 
-        {(!reviews || reviews.length === 0) && (
+        {(!reviews || reviews?.length === 0) && (
           <p className="text-center text-sm text-gray-400">Aucun avis pour le moment</p>
         )}
       </CardContent>
