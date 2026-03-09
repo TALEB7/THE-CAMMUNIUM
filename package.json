@@ -26,5 +26,12 @@
     "node": "20.x",
     "pnpm": ">=8.0.0"
   },
-  "packageManager": "pnpm@9.1.0"
+  "packageManager": "pnpm@9.1.0",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/engines",
+      "@prisma/client",
+      "prisma"
+    ]
+  }
 }
