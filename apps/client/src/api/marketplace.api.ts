@@ -13,7 +13,7 @@ export interface ListingsFilters {
   q?: string;
   category?: string;
   city?: string;
-  condition?: ListingCondition | '';
+  condition?: ListingCondition | '' | string;
   sort?: string;
   minPrice?: string;
   maxPrice?: string;

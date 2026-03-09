@@ -10,7 +10,7 @@ export interface ListingFiltersValues {
   search: string;
   category: string;
   city: string;
-  condition: string;
+  condition: string;  // compatible with ListingCondition | ''
   sort: string;
   minPrice: string;
   maxPrice: string;

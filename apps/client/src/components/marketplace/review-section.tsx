@@ -12,8 +12,8 @@ interface Review {
   comment?: string | null;
   createdAt: string;
   reviewer?: {
-    firstName: string | null;
-    lastName: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
   } | null;
 }
 
