@@ -82,7 +82,7 @@ flowchart TD
 
     U -->|HTTP / WebSocket| GW
 
-    subgraph CLIENT ["🖥️ Next.js 14 — apps/client"]
+    subgraph CLIENT ["🖥️ Next.js 14 — apps/frontend"]
         GW["App Router · TanStack Query · Socket.IO client"]
         AUTH["NextAuth.js · JWT session"]
         GW --> AUTH
@@ -90,7 +90,7 @@ flowchart TD
 
     AUTH -->|credentials| API
 
-    subgraph SERVER ["⚙️ NestJS — apps/server"]
+    subgraph SERVER ["⚙️ NestJS — apps/backend"]
         API["REST API · /api/*"]
         WS["Socket.IO Gateway — /feed namespace"]
         API --> MODULES
@@ -219,7 +219,7 @@ pnpm db:studio      # Open Prisma Studio GUI at localhost:5555
 
 ## LAN sharing (test on another device)
 
-Edit `apps/client/.env`:
+Edit `apps/frontend/.env`:
 ```env
 NEXTAUTH_URL=http://192.168.1.X:3000
 NEXT_PUBLIC_API_URL=http://192.168.1.X:4000/api

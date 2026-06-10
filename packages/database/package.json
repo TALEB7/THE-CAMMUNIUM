@@ -6,6 +6,7 @@
     "generate": "prisma generate",
     "push": "prisma db push",
     "migrate": "prisma migrate dev",
+    "migrate:pgvector": "node migrate-pgvector.js",
     "seed": "ts-node prisma/seed.ts",
     "studio": "prisma studio"
   },

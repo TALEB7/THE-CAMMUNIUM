@@ -3,3 +3,9 @@ uvicorn[standard]==0.30.6
 sentence-transformers==3.0.1
 numpy==1.26.4
 pydantic-settings==2.4.0
+easyocr==1.7.2
+opencv-python-headless==4.10.0.84
+Pillow>=10.4.0
+python-multipart==0.0.6
+transformers==4.44.2
+accelerate==0.34.2

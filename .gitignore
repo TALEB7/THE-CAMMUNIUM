@@ -2,6 +2,12 @@
 node_modules/
 .pnpm-store/
 
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+
 # Build outputs
 dist/
 .next/
@@ -44,7 +50,7 @@ coverage/
 docker-data/
 
 # User uploads (local dev only — use S3/R2 in production)
-apps/server/uploads/
+apps/backend/uploads/
 
 # Claude Code local memory
 .claude/
