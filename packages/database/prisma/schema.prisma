@@ -7,6 +7,12 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator erd {
+  provider = "prisma-erd-generator"
+  output   = "../../../shemas/4.png"
+}
+
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -96,11 +102,36 @@ model User {
   // Phase 7 Relations
   testimonials      Testimonial[]
 
+  // Profile Media (Photos, Videos, Music, Documents)
+  profileMedia      ProfileMedia[]
+
   @@index([role])
   @@index([status])
   @@index([isActive])
   @@index([accountType])
   @@map("users")
+}
+
+// ==================== PROFILE MEDIA ====================
+
+model ProfileMedia {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // photo | video | music | document
+  url       String
+  name      String?
+  size      Int?
+  mimeType  String?
+  caption   String?
+  postId    String?  // Optional link to the source ForumPost
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@index([userId, createdAt])
+  @@map("profile_media")
 }
 
 // ==================== KYC ====================
@@ -138,24 +169,32 @@ model Kyc {
 // ==================== PERSONAL PROFILE ====================
 
 model PersonalProfile {
-  id             String   @id @default(cuid())
-  userId         String   @unique
-  firstName      String?
-  lastName       String?
-  birthday       String?
-  identityType   String?  // cin | passport
-  identityNumber String?
-  phone          String?
-  email          String?
-  country        String?  @default("Maroc")
-  city           String?
-  address        String?
-  profession     String?
-  photoUrl       String?
-  workHistory    Json?    // Array of {title, company, startDate, endDate}
-  interests      String[] // Array of interest tags
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  firstName       String?
+  lastName        String?
+  birthday        String?
+  identityType    String?  // cin | passport
+  identityNumber  String?
+  phone           String?
+  email           String?
+  country         String?  @default("Maroc")
+  city            String?
+  address         String?
+  profession      String?
+  photoUrl        String?
+  workHistory     Json?    // Array of {title, company, startDate, endDate}
+  interests       String[] // Array of interest tags
+  bio             String?
+  birthplace      String?
+  education       Json?    // Array of {degree, school, startDate, endDate}
+  technicalSkills String[] // Array of technical skills
+  softSkills      Json?    // Array of {category, skills}
+  languages       Json?    // Array of {language, level}
+  sports          String[] // Array of sports
+  gaming          String[] // Array of games
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -166,26 +205,38 @@ model PersonalProfile {
 // ==================== BUSINESS PROFILE ====================
 
 model BusinessProfile {
-  id             String   @id @default(cuid())
-  userId         String   @unique
-  companyName    String?
-  rc             String?  // Registre de Commerce
-  creationDate   String?
-  phone          String?
-  email          String?
-  country        String?  @default("Maroc")
-  city           String?
-  address        String?
-  activities     String?
-  ice            String?  // Identifiant Commun de l'Entreprise
-  ifNumber       String?  // Identifiant Fiscal
-  logoUrl        String?
-  role           String?  // Fonction du déclarant : CEO, CFO, Investment Manager...
-  personInCharge String?  // Nom complet du représentant légal / personne en charge
-  interests      String[] // Array of interest tags
-  projects       Json?    // Array of {name, description, url}
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  companyName        String?
+  rc                 String?  // Registre de Commerce
+  creationDate       String?
+  phone              String?
+  email              String?
+  country            String?  @default("Maroc")
+  city               String?
+  address            String?
+  activities         String?
+  ice                String?  // Identifiant Commun de l'Entreprise
+  ifNumber           String?  // Identifiant Fiscal
+  logoUrl            String?
+  role               String?  // Fonction du déclarant : CEO, CFO, Investment Manager...
+  personInCharge     String?  // Nom complet du représentant légal / personne en charge
+  interests          String[] // Array of interest tags
+  projects           Json?    // Array of {name, description, url}
+  bio                String?
+  licenses           String[] // Array of licenses
+  certifications     String[] // Array of certifications
+  headquarters       String?
+  subsidiaries       String[] // Array of subsidiaries
+  website            String?
+  technicalEquipment Json?    // Array of {name, count}
+  humanResources     Json?    // Array of {role, count}
+  events             Json?    // Array of {title, date, location}
+  onlineMeetings     Json?    // Array of {title, date, platform}
+  trainingPrograms   Json?    // Array of {title, date, location}
+  sectorsOfInterests String[] // Array of sectors
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

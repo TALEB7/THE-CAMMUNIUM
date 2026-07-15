@@ -42,15 +42,16 @@ def recommend_for_user(
     user_embedding: List[float],
     candidates: List[dict],           # [{"listing_id": str, "embedding": List[float]}]
     top_k: int = 20,
-    diversity_lambda: float = 0.3,
+    diversity_lambda: float = 0.4,
 ) -> List[dict]:
     """
     Returns up to top_k recommendations sorted by MMR score (descending).
 
     Each result dict: {listing_id, relevance_score, diversity_score, final_score}
 
-    diversity_score is the max similarity to any already-selected item
-    (how much this item would repeat what's already shown).
+    diversity_score is **inverted**: 1.0 = very diverse (unique), 0.0 = clone
+    of an already-selected item.  Internally MMR still penalises by raw
+    similarity; the inversion is applied only on the returned score.
     """
     if not candidates:
         return []
@@ -111,7 +112,7 @@ def recommend_for_user(
         results.append({
             "listing_id":      ids[best_idx],
             "relevance_score": round(float(relevance[best_idx]), 4),
-            "diversity_score": round(best_diversity, 4),
+            "diversity_score": round(1.0 - best_diversity, 4),  # 1.0 = unique, 0.0 = clone
             "final_score":     round(best_score, 4),
         })
 

@@ -10,15 +10,18 @@ export function useUser() {
   const { data: session, status } = useSession();
   const isLoaded = status !== "loading";
 
-  const user = session?.user ? {
-    id: session.user.id,
-    email: session.user.email as string,
-    firstName: (session.user.name?.split(" ")[0] || "") as string,
-    lastName: (session.user.name?.split(" ").slice(1).join(" ") || "") as string,
-    accountType: (session.user as any).accountType as "personal" | "business" | "company_creation",
-    phone: (session.user as any).phone as string,
-    avatarUrl: (session.user as any).avatarUrl as string,
-  } : null;
+  const user = React.useMemo(() => {
+    return session?.user ? {
+      id: session.user.id,
+      email: session.user.email as string,
+      firstName: ((session.user as any).firstName || session.user.name?.split(" ")[0] || "") as string,
+      lastName: ((session.user as any).lastName || session.user.name?.split(" ").slice(1).join(" ") || "") as string,
+      accountType: (session.user as any).accountType as "personal" | "business" | "company_creation",
+      phone: (session.user as any).phone as string,
+      avatarUrl: (session.user as any).avatarUrl as string,
+      role: (session.user as any).role as string,
+    } : null;
+  }, [session?.user]);
 
   return { isLoaded, isSignedIn: !!user, user };
 }

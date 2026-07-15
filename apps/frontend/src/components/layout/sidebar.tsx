@@ -5,11 +5,11 @@ import { usePathname } from 'next/navigation';
 import {
   Home, LayoutDashboard, User,
   ShoppingBag, MessagesSquare,
-  Search, Settings, Coins, LogOut,
+  Search, Settings, Coins, LogOut, Shield,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useT } from '@/lib/i18n';
-import { useAuth } from '@/lib/auth-client';
+import { useAuth, useUser } from '@/lib/auth-client';
 
 function NavIcon({ href, icon: Icon, label, exact = false }: {
   href: string; icon: any; label: string; exact?: boolean;
@@ -44,6 +44,7 @@ function Divider() {
 export function Sidebar() {
   const { t } = useT();
   const { signOut } = useAuth();
+  const { user } = useUser();
 
   return (
     <aside className="hidden lg:flex flex-col items-center w-16 shrink-0 border-r border-border bg-card dark:bg-[#0a0a0a] dark:border-[#1a1a1a] py-3 gap-1 h-[calc(100vh-56px)] sticky top-14">
@@ -65,6 +66,13 @@ export function Sidebar() {
       <NavIcon href="/search"   icon={Search}   label={t.nav.search} />
       <NavIcon href="/tokens"   icon={Coins}    label={t.nav.tokens} />
       <NavIcon href="/settings" icon={Settings} label={t.nav.settings} />
+
+      {user?.role === 'ADMIN' && (
+        <>
+          <Divider />
+          <NavIcon href="/admin" icon={Shield} label={t.nav.admin} />
+        </>
+      )}
 
       {/* Logout en bas */}
       <div className="flex-1" />

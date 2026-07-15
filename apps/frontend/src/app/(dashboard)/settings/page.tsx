@@ -54,6 +54,11 @@ function Row({ label, sub, children }: { label: string; sub?: string; children?:
 // ─── Section: Account ──────────────────────────────────────────────────────
 function AccountSection() {
   const { user } = useUser();
+  const { data: profile } = useQuery({
+    queryKey: ['profile'],
+    queryFn: () => api.get('/profiles/me').then((r) => r.data),
+    enabled: !!user?.id,
+  });
   const { toast } = useToast();
   const [editing, setEditing] = useState<string | null>(null);
   const [val, setVal] = useState('');
@@ -63,6 +68,9 @@ function AccountSection() {
     setEditing(null);
   };
 
+  const accountType = profile?.accountType || user?.accountType;
+  const accountTypeLabel = (accountType === 'business' || accountType === 'company_creation') ? 'Business' : 'Personnel';
+
   return (
     <div>
       <SectionHeader icon={User} title="Mon compte" sub="Gérez vos informations de compte" />
@@ -71,7 +79,7 @@ function AccountSection() {
           { key: 'email', label: 'Adresse email', icon: Mail, value: user?.email || '—' },
           { key: 'phone', label: 'Téléphone',      icon: Phone, value: (user as any)?.phone || 'Non renseigné' },
           { key: 'lang',  label: 'Langue',         icon: Languages, value: 'Français' },
-          { key: 'type',  label: 'Type de compte', icon: User, value: user?.accountType === 'business' ? 'Business' : 'Personnel' },
+          { key: 'type',  label: 'Type de compte', icon: User, value: accountTypeLabel },
         ].map(({ key, label, icon: Icon, value }) => (
           <div key={key} className="flex items-center justify-between px-5 py-4">
             <div className="flex items-center gap-3">

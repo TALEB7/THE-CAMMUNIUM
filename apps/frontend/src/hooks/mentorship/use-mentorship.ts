@@ -14,22 +14,26 @@ export interface Mentor {
   user: { id: string; firstName: string; lastName: string; imageUrl?: string };
 }
 
-export function useMentors(search?: string) {
-  return useQuery<Mentor[]>({
-    queryKey: ['mentors', search],
-    queryFn: () =>
-      api.get('/mentorship/mentors').then((r) => {
-        const all: Mentor[] = r.data.mentors || [];
+export function useMentors(userId?: string, search?: string) {
+  return useQuery<any[]>({
+    queryKey: ['mentors', userId, search],
+    queryFn: () => {
+      const endpoint = userId
+        ? `/mentorship/mentors/match?menteeId=${userId}&goals=${encodeURIComponent(search || '')}`
+        : '/mentorship/mentors';
+      return api.get(endpoint).then((r) => {
+        const all = userId ? (r.data || []) : (r.data?.mentors || []);
         if (!search) return all;
         const q = search.toLowerCase();
         return all.filter(
-          (m) =>
+          (m: any) =>
             m.user.firstName?.toLowerCase().includes(q) ||
             m.user.lastName?.toLowerCase().includes(q) ||
             m.headline?.toLowerCase().includes(q) ||
-            m.expertise.some((e) => e.toLowerCase().includes(q)),
+            m.expertise.some((e: any) => e.toLowerCase().includes(q)),
         );
-      }),
+      });
+    },
     staleTime: 60000,
   });
 }

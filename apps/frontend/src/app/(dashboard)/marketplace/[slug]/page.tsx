@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 import { useT } from '@/lib/i18n';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
 import {
   useListingBySlug,
   useListingReviews,
@@ -27,6 +29,11 @@ export default function ListingDetailPage() {
 
   // Queries
   const { data: listing, isLoading } = useListingBySlug(slug);
+  const { data: profile } = useQuery({
+    queryKey: ['profile'],
+    queryFn: () => api.get('/profiles/me').then((r) => r.data),
+    staleTime: 60000,
+  });
   const { data: reviews } = useListingReviews(listing?.id);
   const { data: similarListings = [], isLoading: isSimilarLoading } = useSimilarListings(listing?.id);
   const { data: eta, isLoading: etaLoading } = useListingEta(listing?.id);
@@ -127,6 +134,8 @@ export default function ListingDetailPage() {
           sentiment={sentiment}
           sentimentLoading={sentimentLoading}
           reviewCount={reviewList.length}
+          listingCity={listing.city}
+          buyerCity={profile?.city}
         />
         <ListingSidebar
           listing={listing}

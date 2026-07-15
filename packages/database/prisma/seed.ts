@@ -9,18 +9,18 @@ async function main() {
   const users = await Promise.all([
     prisma.user.upsert({
       where: { email: 'sami.taleb@communium.ma' },
-      update: {},
+      update: { role: 'ADMIN' },
       create: {
-        email: 'sami.taleb@communium.ma', passwordHash: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+        email: 'sami.taleb@communium.ma', passwordHash: '$2b$10$C0cleD4GB62mqLtPIsFAfuzrluUM4vd.VgCh/acNnIH6xpdDoPO/.',
         firstName: 'Sami', lastName: 'Taleb', accountType: 'personal',
-        isVerified: true, profileViews: 147,
+        role: 'ADMIN', isVerified: true, profileViews: 147,
       },
     }),
     prisma.user.upsert({
       where: { email: 'fatima.elamrani@communium.ma' },
       update: {},
       create: {
-        email: 'fatima.elamrani@communium.ma', passwordHash: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+        email: 'fatima.elamrani@communium.ma', passwordHash: '$2b$10$C0cleD4GB62mqLtPIsFAfuzrluUM4vd.VgCh/acNnIH6xpdDoPO/.',
         firstName: 'Fatima', lastName: 'El Amrani', accountType: 'business',
         isVerified: true, profileViews: 312,
       },
@@ -29,7 +29,7 @@ async function main() {
       where: { email: 'youssef.benmoussa@communium.ma' },
       update: {},
       create: {
-        email: 'youssef.benmoussa@communium.ma', passwordHash: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+        email: 'youssef.benmoussa@communium.ma', passwordHash: '$2b$10$C0cleD4GB62mqLtPIsFAfuzrluUM4vd.VgCh/acNnIH6xpdDoPO/.',
         firstName: 'Youssef', lastName: 'Ben Moussa', accountType: 'personal',
         isVerified: true, profileViews: 89,
       },
@@ -38,7 +38,7 @@ async function main() {
       where: { email: 'amina.cherkaoui@communium.ma' },
       update: {},
       create: {
-        email: 'amina.cherkaoui@communium.ma', passwordHash: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+        email: 'amina.cherkaoui@communium.ma', passwordHash: '$2b$10$C0cleD4GB62mqLtPIsFAfuzrluUM4vd.VgCh/acNnIH6xpdDoPO/.',
         firstName: 'Amina', lastName: 'Cherkaoui', accountType: 'personal',
         isVerified: false, profileViews: 54,
       },
@@ -47,7 +47,7 @@ async function main() {
       where: { email: 'karim.idrissi@communium.ma' },
       update: {},
       create: {
-        email: 'karim.idrissi@communium.ma', passwordHash: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+        email: 'karim.idrissi@communium.ma', passwordHash: '$2b$10$C0cleD4GB62mqLtPIsFAfuzrluUM4vd.VgCh/acNnIH6xpdDoPO/.',
         firstName: 'Karim', lastName: 'Idrissi', accountType: 'business',
         isVerified: true, profileViews: 201,
       },
@@ -56,7 +56,7 @@ async function main() {
       where: { email: 'sara.benali@communium.ma' },
       update: {},
       create: {
-        email: 'sara.benali@communium.ma', passwordHash: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+        email: 'sara.benali@communium.ma', passwordHash: '$2b$10$C0cleD4GB62mqLtPIsFAfuzrluUM4vd.VgCh/acNnIH6xpdDoPO/.',
         firstName: 'Sara', lastName: 'Ben Ali', accountType: 'personal',
         isVerified: true, profileViews: 76,
       },
@@ -65,7 +65,7 @@ async function main() {
       where: { email: 'mehdi.ziani@communium.ma' },
       update: {},
       create: {
-        email: 'mehdi.ziani@communium.ma', passwordHash: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+        email: 'mehdi.ziani@communium.ma', passwordHash: '$2b$10$C0cleD4GB62mqLtPIsFAfuzrluUM4vd.VgCh/acNnIH6xpdDoPO/.',
         firstName: 'Mehdi', lastName: 'Ziani', accountType: 'personal',
         isVerified: false, profileViews: 32,
       },
@@ -74,7 +74,7 @@ async function main() {
       where: { email: 'nadia.tazi@communium.ma' },
       update: {},
       create: {
-        email: 'nadia.tazi@communium.ma', passwordHash: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+        email: 'nadia.tazi@communium.ma', passwordHash: '$2b$10$C0cleD4GB62mqLtPIsFAfuzrluUM4vd.VgCh/acNnIH6xpdDoPO/.',
         firstName: 'Nadia', lastName: 'Tazi', accountType: 'business',
         isVerified: true, profileViews: 445,
       },
@@ -86,11 +86,11 @@ async function main() {
 
   // ── 2. PROFILES ─────────────────────────────────────────────────────────
   const personalProfiles = [
-    { user: sami,    profession: 'Ingénieur Data Science & IA', city: 'Tanger',     interests: ['Technologie','IA','Data Science','Business'] },
-    { user: youssef, profession: 'Développeur Full Stack',       city: 'Casablanca', interests: ['Technologie','Startup','Web'] },
-    { user: amina,   profession: 'Designer UX/UI',               city: 'Rabat',      interests: ['Design','Art','Technologie'] },
-    { user: sara,    profession: 'Comptable & Fiscaliste',        city: 'Fès',        interests: ['Finance','Business','Droit'] },
-    { user: mehdi,   profession: 'Étudiant en Marketing',        city: 'Marrakech',  interests: ['Marketing','Communication','Business'] },
+    { user: sami, profession: 'Ingénieur Data Science & IA', city: 'Tanger', interests: ['Technologie', 'IA', 'Data Science', 'Business'] },
+    { user: youssef, profession: 'Développeur Full Stack', city: 'Casablanca', interests: ['Technologie', 'Startup', 'Web'] },
+    { user: amina, profession: 'Designer UX/UI', city: 'Rabat', interests: ['Design', 'Art', 'Technologie'] },
+    { user: sara, profession: 'Comptable & Fiscaliste', city: 'Fès', interests: ['Finance', 'Business', 'Droit'] },
+    { user: mehdi, profession: 'Étudiant en Marketing', city: 'Marrakech', interests: ['Marketing', 'Communication', 'Business'] },
   ];
 
   for (const { user, profession, city, interests } of personalProfiles) {
@@ -107,9 +107,9 @@ async function main() {
   }
 
   const businessProfiles = [
-    { user: fatima, companyName: 'TechMa Solutions SARL', city: 'Tanger',     activities: 'Développement logiciel, Consulting IT' },
-    { user: karim,  companyName: 'Karim Import Export',   city: 'Casablanca', activities: 'Import/Export, Logistique' },
-    { user: nadia,  companyName: 'Nadia Conseil & Co.',   city: 'Rabat',      activities: 'Conseil, Formation professionnelle' },
+    { user: fatima, companyName: 'TechMa Solutions SARL', city: 'Tanger', activities: 'Développement logiciel, Consulting IT' },
+    { user: karim, companyName: 'Karim Import Export', city: 'Casablanca', activities: 'Import/Export, Logistique' },
+    { user: nadia, companyName: 'Nadia Conseil & Co.', city: 'Rabat', activities: 'Conseil, Formation professionnelle' },
   ];
 
   for (const { user, companyName, city, activities } of businessProfiles) {
@@ -127,10 +127,10 @@ async function main() {
 
   // ── 3. TKS WALLETS ──────────────────────────────────────────────────────
   const walletData = [
-    { user: sami,    balance: 245 }, { user: fatima, balance: 890 },
-    { user: youssef, balance: 120 }, { user: amina,  balance: 50  },
-    { user: karim,   balance: 650 }, { user: sara,   balance: 75  },
-    { user: mehdi,   balance: 30  }, { user: nadia,  balance: 1200},
+    { user: sami, balance: 245 }, { user: fatima, balance: 890 },
+    { user: youssef, balance: 120 }, { user: amina, balance: 50 },
+    { user: karim, balance: 650 }, { user: sara, balance: 75 },
+    { user: mehdi, balance: 30 }, { user: nadia, balance: 1200 },
   ];
   for (const { user, balance } of walletData) {
     await prisma.tksWallet.upsert({
@@ -159,11 +159,11 @@ async function main() {
   // ── 5. CATEGORIES ────────────────────────────────────────────────────────
   const catData = [
     { name: 'Informatique & Tech', slug: 'informatique-tech', icon: '💻' },
-    { name: 'Import / Export',     slug: 'import-export',     icon: '📦' },
-    { name: 'Immobilier',          slug: 'immobilier',         icon: '🏠' },
-    { name: 'Véhicules',           slug: 'vehicules',          icon: '🚗' },
-    { name: 'Formation & Cours',   slug: 'formation-cours',    icon: '📚' },
-    { name: 'Services',            slug: 'services',           icon: '🛠️' },
+    { name: 'Import / Export', slug: 'import-export', icon: '📦' },
+    { name: 'Immobilier', slug: 'immobilier', icon: '🏠' },
+    { name: 'Véhicules', slug: 'vehicules', icon: '🚗' },
+    { name: 'Formation & Cours', slug: 'formation-cours', icon: '📚' },
+    { name: 'Services', slug: 'services', icon: '🛠️' },
   ];
   const cats: any[] = [];
   for (const c of catData) {
@@ -187,26 +187,7 @@ async function main() {
       slug: 'formation-reactjs-nextjs-20h-en-ligne', description: 'Formation complète React.js et Next.js 14 avec projets pratiques. Certificat inclus. Idéal débutants et intermédiaires. Accès à vie aux enregistrements.',
       price: 850, condition: 'NEW', city: 'Tanger', images: [],
     },
-    {
-      seller: karim, category: catImport, title: 'Lot de 500 t-shirts coton bio — Import Turquie',
-      slug: 'lot-500-tshirts-coton-bio-import-turquie', description: 'Lot de 500 t-shirts 100% coton biologique, différentes couleurs et tailles. Prix import direct Turquie. Idéal revendeurs.',
-      price: 12000, condition: 'NEW', city: 'Casablanca', images: [],
-    },
-    {
-      seller: nadia, category: catForm, title: 'Consulting RH & Recrutement — Forfait PME',
-      slug: 'consulting-rh-recrutement-forfait-pme', description: 'Accompagnement RH complet pour PME: définition des postes, processus de recrutement, intégration. 3 mois d\'accompagnement inclus.',
-      price: 5000, condition: 'NEW', city: 'Rabat', images: [],
-    },
-    {
-      seller: youssef, category: catTech, title: 'iPhone 14 Pro 256GB — Déverrouillé',
-      slug: 'iphone-14-pro-256gb-deverrouille', description: 'iPhone 14 Pro 256GB couleur Violet Intense. Déverrouillé tout opérateur. Batterie à 94%. Vendu avec boîte originale et câble.',
-      price: 8900, condition: 'GOOD', city: 'Casablanca', images: [],
-    },
-    {
-      seller: sara, category: catServ, title: 'Comptabilité & Fiscalité PME — Suivi mensuel',
-      slug: 'comptabilite-fiscalite-pme-suivi-mensuel', description: 'Service de comptabilité mensuelle pour TPE/PME. Déclarations fiscales, bilan annuel, conseil. Tarif préférentiel pour startups.',
-      price: 1200, condition: 'NEW', city: 'Fès', images: [],
-    },
+
   ];
 
   const listings: any[] = [];
@@ -338,9 +319,9 @@ async function main() {
 
   // ── 9. GROUPS ────────────────────────────────────────────────────────────
   const groupData = [
-    { creator: sami,  name: 'IA & Data Science Maroc',    slug: 'ia-data-science-maroc',    description: 'Communauté des passionnés d\'IA et Data Science au Maroc' },
-    { creator: karim, name: 'Import Export Network',       slug: 'import-export-network',     description: 'Réseau des professionnels de l\'import/export' },
-    { creator: nadia, name: 'Femmes Entrepreneures Maroc', slug: 'femmes-entrepreneures-maroc',description: 'Réseau de soutien aux femmes entrepreneuses marocaines' },
+    { creator: sami, name: 'IA & Data Science Maroc', slug: 'ia-data-science-maroc', description: 'Communauté des passionnés d\'IA et Data Science au Maroc' },
+    { creator: karim, name: 'Import Export Network', slug: 'import-export-network', description: 'Réseau des professionnels de l\'import/export' },
+    { creator: nadia, name: 'Femmes Entrepreneures Maroc', slug: 'femmes-entrepreneures-maroc', description: 'Réseau de soutien aux femmes entrepreneuses marocaines' },
   ];
 
   const groups: any[] = [];
@@ -373,11 +354,11 @@ async function main() {
 
   // ── 10. BADGES ───────────────────────────────────────────────────────────
   const badgeData = [
-    { name: 'Pionnier',       slug: 'pionnier',       description: 'Un des premiers membres', icon: '🚀', color: '#C8102E', category: 'community' },
-    { name: 'Vendeur Expert', slug: 'vendeur-expert', description: '5+ annonces publiées',    icon: '🛍️', color: '#f59e0b', category: 'marketplace' },
-    { name: 'Networker',      slug: 'networker',      description: '10+ connexions',           icon: '🤝', color: '#3b82f6', category: 'network' },
-    { name: 'Mentor',         slug: 'mentor',         description: 'Mentor certifié',          icon: '🎓', color: '#8b5cf6', category: 'mentorship' },
-    { name: 'Contributeur',   slug: 'contributeur',   description: '5+ posts forum',           icon: '💬', color: '#10b981', category: 'forum' },
+    { name: 'Pionnier', slug: 'pionnier', description: 'Un des premiers membres', icon: '🚀', color: '#C8102E', category: 'community' },
+    { name: 'Vendeur Expert', slug: 'vendeur-expert', description: '5+ annonces publiées', icon: '🛍️', color: '#f59e0b', category: 'marketplace' },
+    { name: 'Networker', slug: 'networker', description: '10+ connexions', icon: '🤝', color: '#3b82f6', category: 'network' },
+    { name: 'Mentor', slug: 'mentor', description: 'Mentor certifié', icon: '🎓', color: '#8b5cf6', category: 'mentorship' },
+    { name: 'Contributeur', slug: 'contributeur', description: '5+ posts forum', icon: '💬', color: '#10b981', category: 'forum' },
   ];
 
   const badges: any[] = [];
@@ -398,21 +379,16 @@ async function main() {
 
   // ── 11. ACTIVITY FEED ───────────────────────────────────────────────────
   const feedItems = [
-    { user: sami,    type: 'POST',        description: 'Sami Taleb a publié : "L\'IA générative va-t-elle transformer le marché du travail au Maroc ?"' },
-    { user: fatima,  type: 'LISTING',     description: 'Fatima El Amrani a publié une annonce : Formation React.js & Next.js — 20h en ligne' },
-    { user: youssef, type: 'CONNECTION',  description: 'Youssef Ben Moussa et Sami Taleb sont maintenant connectés' },
-    { user: karim,   type: 'POST',        description: 'Karim Idrissi a publié : "Meilleurs outils pour gérer son e-commerce au Maroc"' },
-    { user: nadia,   type: 'LISTING',     description: 'Nadia Tazi a publié une annonce : Consulting RH & Recrutement — Forfait PME' },
-    { user: amina,   type: 'GROUP_JOIN',  description: 'Amina Cherkaoui a rejoint le groupe IA & Data Science Maroc' },
-    { user: sami,    type: 'ACHIEVEMENT', description: 'Sami Taleb a obtenu le badge Pionnier 🚀' },
-    { user: fatima,  type: 'POST',        description: 'Fatima El Amrani a partagé : "Comment j\'ai lancé ma startup tech à Tanger avec 50 000 DH"' },
-    { user: sara,    type: 'LISTING',     description: 'Sara Ben Ali a publié une annonce : Comptabilité & Fiscalité PME — Suivi mensuel' },
-    { user: mehdi,   type: 'CONNECTION',  description: 'Mehdi Ziani a rejoint la communauté The Communium 🎉' },
-    { user: nadia,   type: 'ACHIEVEMENT', description: 'Nadia Tazi a obtenu le badge Networker 🤝' },
-    { user: karim,   type: 'LISTING',     description: 'Karim Idrissi a publié une annonce : Lot de 500 t-shirts coton bio — Import Turquie' },
-    { user: youssef, type: 'POST',        description: 'Youssef Ben Moussa a posté : "Bienvenue sur The Communium — Présentez-vous !"' },
-    { user: sami,    type: 'EVENT',       description: 'Sami Taleb participe à l\'événement : Business Networking — Tanger Edition' },
-    { user: amina,   type: 'POST',        description: 'Amina Cherkaoui a commenté sur "L\'IA générative va-t-elle transformer le marché du travail ?"' },
+    { user: sami, type: 'POST', description: 'Sami Taleb a publié : "L\'IA générative va-t-elle transformer le marché du travail au Maroc ?"' },
+    { user: fatima, type: 'LISTING', description: 'Fatima El Amrani a publié une annonce : Formation React.js & Next.js — 20h en ligne' },
+    { user: youssef, type: 'CONNECTION', description: 'Youssef Ben Moussa et Sami Taleb sont maintenant connectés' },
+    { user: karim, type: 'POST', description: 'Karim Idrissi a publié : "Meilleurs outils pour gérer son e-commerce au Maroc"' },
+    { user: amina, type: 'GROUP_JOIN', description: 'Amina Cherkaoui a rejoint le groupe IA & Data Science Maroc' },
+    { user: sami, type: 'ACHIEVEMENT', description: 'Sami Taleb a obtenu le badge Pionnier 🚀' },
+    { user: fatima, type: 'POST', description: 'Fatima El Amrani a partagé : "Comment j\'ai lancé ma startup tech à Tanger avec 50 000 DH"' },
+    { user: youssef, type: 'POST', description: 'Youssef Ben Moussa a posté : "Bienvenue sur The Communium — Présentez-vous !"' },
+    { user: sami, type: 'EVENT', description: 'Sami Taleb participe à l\'événement : Business Networking — Tanger Edition' },
+    { user: amina, type: 'POST', description: 'Amina Cherkaoui a commenté sur "L\'IA générative va-t-elle transformer le marché du travail ?"' },
   ];
 
   for (let i = 0; i < feedItems.length; i++) {
@@ -434,10 +410,10 @@ async function main() {
 
   // ── 12. NOTIFICATIONS ───────────────────────────────────────────────────
   const notifData = [
-    { user: sami,  title: 'Nouvelle connexion', message: 'Fatima El Amrani a accepté votre invitation', type: 'CONNECTION' },
-    { user: sami,  title: 'Nouveau badge !',    message: 'Vous avez obtenu le badge Pionnier 🚀',        type: 'BADGE' },
-    { user: fatima,title: 'Nouveau message',    message: 'Karim Idrissi vous a envoyé un message',        type: 'MESSAGE' },
-    { user: karim, title: 'Votre annonce',      message: 'Quelqu\'un a consulté votre annonce import t-shirts', type: 'LISTING' },
+    { user: sami, title: 'Nouvelle connexion', message: 'Fatima El Amrani a accepté votre invitation', type: 'CONNECTION' },
+    { user: sami, title: 'Nouveau badge !', message: 'Vous avez obtenu le badge Pionnier 🚀', type: 'BADGE' },
+    { user: fatima, title: 'Nouveau message', message: 'Karim Idrissi vous a envoyé un message', type: 'MESSAGE' },
+    { user: karim, title: 'Votre annonce', message: 'Quelqu\'un a consulté votre annonce import t-shirts', type: 'LISTING' },
   ];
 
   for (const n of notifData) {

@@ -10,6 +10,23 @@ const protectedPrefixes = ["/feed", "/profile", "/marketplace", "/documents", "/
 export default withAuth(async (req) => {
   const { pathname } = req.nextUrl;
   const token = req.nextauth.token;
+  const role = (token as any)?.role;
+
+  // Admin routing constraints
+  if (role === "ADMIN") {
+    if (!pathname.startsWith("/admin") && !pathname.startsWith("/settings")) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/admin";
+      return NextResponse.redirect(url);
+    }
+  } else {
+    // Prevent normal users from accessing admin routes
+    if (pathname.startsWith("/admin")) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/dashboard";
+      return NextResponse.redirect(url);
+    }
+  }
 
   if (protectedPrefixes.some(p => pathname.startsWith(p))) {
     const accountType = (token as any)?.accountType;

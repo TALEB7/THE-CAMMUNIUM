@@ -1,4 +1,4 @@
-import { IsArray, IsEmail, IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsEmail, IsEnum, IsOptional, IsString, ValidateIf } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class OnboardingDto {
@@ -71,6 +71,7 @@ export class OnboardingDto {
 
   @ApiProperty({ required: false, description: 'Email professionnel de l\'entreprise' })
   @IsOptional()
+  @ValidateIf((o) => o.companyEmail !== '' && o.companyEmail != null)
   @IsEmail()
   companyEmail?: string;
 

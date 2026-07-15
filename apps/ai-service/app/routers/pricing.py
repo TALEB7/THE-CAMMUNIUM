@@ -22,6 +22,8 @@ async def suggest_listing_price(req: PriceSuggestionRequest):
         result = suggest_price(
             condition=req.condition,
             comparable_prices=req.comparable_prices,
+            original_price=req.original_price,
+            age_months=req.age_months,
         )
         return PriceSuggestionResponse(**result)
     except Exception as e:

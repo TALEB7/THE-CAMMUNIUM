@@ -22,11 +22,6 @@ export class MentorshipController {
     return this.mentorshipService.createMentorProfile(userId, data);
   }
 
-  @Get('mentors/:userId')
-  async getMentorProfile(@Param('userId') userId: string) {
-    return this.mentorshipService.getMentorProfile(userId);
-  }
-
   /**
    * GET /mentorship/mentors/match?menteeId=xxx&goals=...&limit=10
    *
@@ -43,6 +38,11 @@ export class MentorshipController {
     @Query('limit') limit?: string,
   ) {
     return this.mentorshipService.findMatchingMentors(menteeId, goals, limit ? parseInt(limit) : 10);
+  }
+
+  @Get('mentors/:userId')
+  async getMentorProfile(@Param('userId') userId: string) {
+    return this.mentorshipService.getMentorProfile(userId);
   }
 
   @Get('mentors')

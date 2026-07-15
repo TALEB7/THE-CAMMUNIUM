@@ -65,17 +65,7 @@ export class MarketplaceController {
     return this.marketplaceService.getListingReviews(id);
   }
 
-  @Get('listings/:id/price-check')
-  @ApiOperation({ summary: 'Check if a listing price is a statistical anomaly for its category' })
-  checkPriceAnomaly(@Param('id') id: string) {
-    return this.marketplaceService.checkPriceAnomaly(id);
-  }
 
-  @Get('listings/:id/fraud-check')
-  @ApiOperation({ summary: 'AI fraud/fake-review detection for a listing (admin use)' })
-  detectReviewFraud(@Param('id') id: string) {
-    return this.marketplaceService.detectReviewFraud(id);
-  }
 
   @Get('listings/:id/sentiment')
   @ApiOperation({ summary: 'Sentiment analysis of all reviews for a listing' })

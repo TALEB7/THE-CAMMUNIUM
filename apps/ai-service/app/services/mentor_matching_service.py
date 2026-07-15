@@ -20,18 +20,12 @@ from app.models.schemas import (
     MentorCandidate,
     MentorMatchItem,
 )
+from app.services.similarity_service import cosine_similarity as _cosine
 
 logger = logging.getLogger(__name__)
 
 _EXP_CAP = 20       # years — anything above is treated as "very experienced"
 _SESSION_CAP = 200  # sessions — diminishing returns after this
-
-
-def _cosine(a: List[float], b: List[float]) -> float:
-    """Cosine similarity between two pre-normalised (unit-norm) vectors."""
-    va = np.array(a, dtype=np.float32)
-    vb = np.array(b, dtype=np.float32)
-    return float(np.dot(va, vb))
 
 
 def _minmax(values: np.ndarray) -> np.ndarray:
@@ -63,6 +57,9 @@ def rank_mentors(
     within the candidate pool passed in, making it easy to call from tests
     or a notebook without any DB access.
     """
+    # Exclude unavailable mentors entirely — they must never be surfaced as a
+    # match, even with a strong semantic/quality score.
+    candidates = [c for c in candidates if c.is_available]
     if not candidates:
         return []
 
@@ -79,18 +76,16 @@ def rank_mentors(
     rating_scores = _minmax(raw_ratings)
 
     # ── 3. Experience (log-compressed, capped at _EXP_CAP years) ─────
-    raw_exp = np.array(
+    exp_scores = np.array(
         [_log_compress(c.years_exp, _EXP_CAP) for c in candidates],
         dtype=np.float32,
     )
-    exp_scores = _minmax(raw_exp)
 
     # ── 4. Proven track record (log-compressed session count) ─────────
-    raw_sessions = np.array(
+    session_scores = np.array(
         [_log_compress(c.total_sessions, _SESSION_CAP) for c in candidates],
         dtype=np.float32,
     )
-    session_scores = _minmax(raw_sessions)
 
     # ── 5. Composite score ────────────────────────────────────────────
     composite = (
@@ -99,13 +94,6 @@ def rank_mentors(
         + w_experience * exp_scores
         + w_sessions * session_scores
     )
-
-    # Penalise unavailable mentors without excluding them completely
-    availability_mask = np.array(
-        [1.0 if c.is_available else 0.6 for c in candidates],
-        dtype=np.float32,
-    )
-    composite *= availability_mask
 
     # ── 6. Sort + take top-k ─────────────────────────────────────────
     ranked_idx = np.argsort(composite)[::-1][:top_k]

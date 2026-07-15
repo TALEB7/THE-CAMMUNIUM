@@ -124,23 +124,6 @@ export class AiService {
     }
   }
 
-  async detectPriceAnomaly(params: {
-    price: number;
-    comparablePrices: number[];
-  }): Promise<{ is_anomaly: boolean; z_score: number; modified_z_score: number; market_median: number; market_mean: number; direction: string; confidence: number } | null> {
-    try {
-      const { data } = await firstValueFrom(
-        this.http.post<any>('/anomaly/price', {
-          price: params.price,
-          comparable_prices: params.comparablePrices,
-        }),
-      );
-      return data;
-    } catch (err: any) {
-      this.logger.warn(`AI: Failed to run price anomaly check: ${err?.message || err}`);
-      return null;
-    }
-  }
 
   async getPersonalizedRecommendations(params: {
     userEmbedding: number[];
@@ -202,46 +185,7 @@ export class AiService {
     }
   }
 
-  async getTrendingCategories(params: {
-    dataPoints: Array<{
-      category: string;
-      date: string;
-      view_count: number;
-      search_count: number;
-      listing_count: number;
-    }>;
-    topK?: number;
-    windowDays?: number;
-  }): Promise<{ trending: Array<{ category: string; trend_score: number; growth_rate: number; avg_daily_views: number }>; computed_at: string } | null> {
-    try {
-      const { data } = await firstValueFrom(
-        this.http.post<any>('/trending/categories', {
-          data_points: params.dataPoints,
-          top_k: params.topK ?? 10,
-          window_days: params.windowDays ?? 7,
-        }),
-      );
-      return data;
-    } catch (err: any) {
-      this.logger.warn(`AI: Failed to get trending categories: ${err?.message || err}`);
-      return null;
-    }
-  }
 
-  async detectReviewFraud(
-    reviews: Array<{ text: string; rating: number; reviewer_id: string; created_at: string; listing_id: string }>,
-    listingId: string,
-  ): Promise<{ is_suspicious: boolean; anomaly_score: number; flags: string[] }> {
-    try {
-      const { data } = await firstValueFrom(
-        this.http.post<any>('/fraud/reviews', { reviews, listing_id: listingId }),
-      );
-      return data;
-    } catch (err: any) {
-      this.logger.warn(`AI: Failed to run review fraud detection for listing ${listingId}: ${err?.message || err}`);
-      return { is_suspicious: false, anomaly_score: 0, flags: [] };
-    }
-  }
 
   async analyzeSentiment(texts: string[]): Promise<{
     results: Array<{ text: string; label: string; score: number; compound: number }>;

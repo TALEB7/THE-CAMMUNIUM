@@ -85,8 +85,32 @@ export const authOptions: NextAuthOptions = {
           token.accessToken = (user as any).accessToken;
           token.kycStatus = (user as any).kycStatus || "none";
         }
-        if (trigger === "update" && session?.kycStatus) {
-          token.kycStatus = session.kycStatus;
+        if (trigger === "update") {
+          if (session?.kycStatus) {
+            token.kycStatus = session.kycStatus;
+          }
+          try {
+            const { prisma } = await import("@/lib/prisma");
+            const dbUser = await prisma.user.findUnique({
+              where: { id: token.id as string },
+            });
+            if (dbUser) {
+              token.firstName = dbUser.firstName;
+              token.lastName = dbUser.lastName;
+              token.accountType = dbUser.accountType;
+              token.phone = dbUser.phone;
+              token.avatarUrl = dbUser.avatarUrl;
+              token.role = dbUser.role;
+            }
+            const kyc = await prisma.kyc.findUnique({
+              where: { userId: token.id as string },
+            });
+            if (kyc) {
+              token.kycStatus = kyc.status;
+            }
+          } catch (e) {
+            console.error("Error updating token in session update:", e);
+          }
         }
         return token;
       },

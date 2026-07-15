@@ -33,7 +33,7 @@ export class DocumentsService {
       );
     }
 
-    if ((extraction.confidence ?? 0) < MIN_CIN_CONFIDENCE) {
+    if (!extraction.card_number && (extraction.confidence ?? 0) < MIN_CIN_CONFIDENCE) {
       throw new BadRequestException(
         'Carte non détectée. Vérifiez la qualité de la photo (bonne lumière, carte bien visible).',
       );

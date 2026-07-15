@@ -3,10 +3,20 @@ from typing import List
 
 
 def cosine_similarity(a: List[float], b: List[float]) -> float:
-    """Cosine similarity between two pre-normalized vectors."""
+    """Cosine similarity between two vectors, bounded to [-1, 1].
+
+    Normalizes both vectors by their L2 norm so the result is a true cosine
+    regardless of whether the inputs were pre-normalized. The final clip only
+    guards against tiny floating-point overshoot (e.g. 1.0000001).
+    """
     va = np.array(a, dtype=np.float32)
     vb = np.array(b, dtype=np.float32)
-    return float(np.dot(va, vb))
+    norm_a = np.linalg.norm(va)
+    norm_b = np.linalg.norm(vb)
+    if norm_a == 0.0 or norm_b == 0.0:
+        return 0.0
+    cosine = np.dot(va, vb) / (norm_a * norm_b)
+    return float(np.clip(cosine, -1.0, 1.0))
 
 
 def find_top_k_similar(

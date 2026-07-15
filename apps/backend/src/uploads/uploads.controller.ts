@@ -109,7 +109,7 @@ export class UploadsController {
     @UploadedFiles() files: Express.Multer.File[],
   ) {
     // Validate folder name (whitelist)
-    const allowedFolders = ['listings', 'avatars', 'documents', 'groups'];
+    const allowedFolders = ['listings', 'avatars', 'documents', 'groups', 'photos', 'videos', 'music'];
     if (!allowedFolders.includes(folder)) {
       throw new BadRequestException(`Dossier non autorisé: ${folder}`);
     }

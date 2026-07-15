@@ -52,14 +52,5 @@ export class AnalyticsController {
     return this.analyticsService.getChurnRisk(ids, risk);
   }
 
-  @Get('trending-categories')
-  async getTrendingCategories(
-    @Query('window') window?: string,
-    @Query('limit') limit?: string,
-  ) {
-    return this.analyticsService.getTrendingCategories(
-      window ? parseInt(window) : 7,
-      limit ? parseInt(limit) : 10,
-    );
-  }
+
 }

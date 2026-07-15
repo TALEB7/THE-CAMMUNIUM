@@ -17,4 +17,13 @@ export class UpdatePersonalProfileDto {
   @ApiPropertyOptional() @IsOptional() @IsString() accountType?: string;
   @ApiPropertyOptional({ type: [Object] }) @IsOptional() @IsArray() workHistory?: Array<{ title: string; company: string; startDate: string; endDate: string }>;
   @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() interests?: string[];
+
+  @ApiPropertyOptional() @IsOptional() @IsString() bio?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() birthplace?: string;
+  @ApiPropertyOptional({ type: [Object] }) @IsOptional() @IsArray() education?: Array<{ degree: string; school: string; startDate: string; endDate: string }>;
+  @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() technicalSkills?: string[];
+  @ApiPropertyOptional({ type: [Object] }) @IsOptional() @IsArray() softSkills?: Array<{ category: string; skills: string[] }>;
+  @ApiPropertyOptional({ type: [Object] }) @IsOptional() @IsArray() languages?: Array<{ language: string; level: string }>;
+  @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() sports?: string[];
+  @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() gaming?: string[];
 }

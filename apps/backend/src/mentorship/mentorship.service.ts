@@ -158,22 +158,50 @@ export class MentorshipService {
         throw new Error('AI Service failed to generate query embedding');
       }
 
-      // 2. Query similarity directly in database
-      // $queryRawUnsafe is used (with $1 placeholder, no string interpolation of inputs)
-      // because of the `::vector` / pgvector distance operator below.
-      const queryEmbeddingString = `[${queryResult.embedding.join(',')}]`;
-      const matches: any[] = await this.prisma.$queryRawUnsafe(`
-        SELECT me."mentorProfileId" as id, (me.embedding <=> $1::vector) as distance
-        FROM mentor_embeddings me
-        INNER JOIN mentor_profiles mp ON mp.id = me."mentorProfileId"
-        WHERE mp."userId" <> $2 AND mp."isAvailable" = true
-        ORDER BY distance ASC
-        LIMIT $3
-      `, queryEmbeddingString, menteeId, topK);
+      // 2. Fetch all candidates and their embeddings from the database.
+      // Exclude the mentee themselves from the candidate pool.
+      const candidatesRaw: any[] = await this.prisma.$queryRawUnsafe(`
+        SELECT 
+          mp.id as "mentorProfileId",
+          mp."yearsExp" as "years_exp",
+          mp."totalSessions" as "total_sessions",
+          mp."isAvailable" as "is_available",
+          mp.rating,
+          me.embedding::text as "embedding_str"
+        FROM mentor_profiles mp
+        INNER JOIN mentor_embeddings me ON me."mentorProfileId" = mp.id
+        WHERE mp."userId" <> $1
+      `, menteeId);
 
-      if (matches.length === 0) return [];
+      if (candidatesRaw.length === 0) {
+        throw new Error('No mentor candidates found');
+      }
 
-      const rankedIds = matches.map((m) => m.id);
+      const candidates = candidatesRaw.map(c => ({
+        mentor_profile_id: c.mentorProfileId,
+        embedding: JSON.parse(c.embedding_str),
+        rating: Number(c.rating || 0),
+        years_exp: Number(c.years_exp || 0),
+        total_sessions: Number(c.total_sessions || 0),
+        is_available: Boolean(c.is_available),
+      }));
+
+      // 3. Call the Python AI service ranker
+      this.logger.log(`Calling matchMentors with ${candidates.length} candidates.`);
+      const matches = await this.aiService.matchMentors({
+        queryEmbedding: queryResult.embedding,
+        candidates,
+        topK,
+      });
+
+      this.logger.log(`FastAPI matching returned ${matches.length} matches.`);
+
+      if (matches.length === 0) {
+        throw new Error('AI matching returned no results');
+      }
+
+      // 4. Hydrate and return full mentor profiles in ranked order
+      const rankedIds = matches.map((m) => m.mentor_profile_id);
       const profiles = await this.prisma.mentorProfile.findMany({
         where: { id: { in: rankedIds } },
         include: {
@@ -181,15 +209,28 @@ export class MentorshipService {
         },
       });
 
-      const distanceMap = new Map(matches.map((m) => [m.id, m.distance]));
+      this.logger.log(`Hydrated ${profiles.length} profiles from database.`);
+
+      const matchMap = new Map(matches.map((m) => [m.mentor_profile_id, m]));
       const ranked = rankedIds
         .map((id) => {
           const profile = profiles.find((p) => p.id === id);
           if (!profile) return null;
-          const score = 1 - (distanceMap.get(id) ?? 0);
-          return { ...profile, _match: { score } };
+          const matchInfo = matchMap.get(id);
+          return { 
+            ...profile, 
+            _match: { 
+              score: matchInfo?.score ?? 0,
+              semantic_score: matchInfo?.semantic_score,
+              rating_score: matchInfo?.rating_score,
+              experience_score: matchInfo?.experience_score,
+              sessions_score: matchInfo?.sessions_score,
+            } 
+          };
         })
         .filter(Boolean);
+
+      this.logger.log(`Returning ${ranked.length} ranked profiles.`);
 
       await this.redis.set(cacheKey, JSON.stringify(ranked), 600);
       return ranked;

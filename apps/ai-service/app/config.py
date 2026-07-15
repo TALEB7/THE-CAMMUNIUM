@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
+        extra="ignore",
         protected_namespaces=(),  # allow field names starting with 'model_'
     )
 

@@ -1,23 +1,6 @@
 import { api } from '@/lib/api';
 
-// ==================== Trending Categories ====================
 
-export interface TrendingCategory {
-  category: string;
-  trend_score: number;
-  growth_rate: number;
-  avg_daily_views: number;
-}
-
-export async function getTrendingCategories(
-  windowDays = 7,
-  limit = 8,
-): Promise<{ trending: TrendingCategory[]; computed_at: string }> {
-  const { data } = await api.get('/analytics/trending-categories', {
-    params: { window: windowDays, limit },
-  });
-  return data;
-}
 
 // ==================== Churn Risk ====================
 

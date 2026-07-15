@@ -17,4 +17,17 @@ export class UpdateBusinessProfileDto {
   @ApiPropertyOptional() @IsOptional() @IsString() avatarUrl?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() accountType?: string;
   @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() interests?: string[];
+
+  @ApiPropertyOptional() @IsOptional() @IsString() bio?: string;
+  @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() licenses?: string[];
+  @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() certifications?: string[];
+  @ApiPropertyOptional() @IsOptional() @IsString() headquarters?: string;
+  @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() subsidiaries?: string[];
+  @ApiPropertyOptional() @IsOptional() @IsString() website?: string;
+  @ApiPropertyOptional({ type: [Object] }) @IsOptional() @IsArray() technicalEquipment?: Array<{ name: string; count: number }>;
+  @ApiPropertyOptional({ type: [Object] }) @IsOptional() @IsArray() humanResources?: Array<{ role: string; count: number }>;
+  @ApiPropertyOptional({ type: [Object] }) @IsOptional() @IsArray() events?: Array<{ title: string; date: string; location: string }>;
+  @ApiPropertyOptional({ type: [Object] }) @IsOptional() @IsArray() onlineMeetings?: Array<{ title: string; date: string; platform: string }>;
+  @ApiPropertyOptional({ type: [Object] }) @IsOptional() @IsArray() trainingPrograms?: Array<{ title: string; date: string; location: string }>;
+  @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() sectorsOfInterests?: string[];
 }

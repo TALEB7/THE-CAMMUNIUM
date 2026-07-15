@@ -6,21 +6,45 @@ import { useAuth, useUser } from '@/lib/auth-client';
 import { api } from '@/lib/api';
 import { getMediaUrl } from '@/lib/media-url';
 import Link from 'next/link';
-import { AiInsightsWidget } from '@/components/ai/ai-insights-widget';
 import { OnboardingBanner } from '@/components/layout/onboarding-banner';
 import {
   Image, FileText, Calendar, Users, Briefcase,
   ThumbsUp, MessageCircle, Share2, Eye,
   TrendingUp, UserPlus, ChevronRight,
   Award, ShoppingBag, GraduationCap,
-  X, Upload, Loader2, Check, Globe,
+  X, Upload, Loader2, Check, Globe, Music, Film,
 } from 'lucide-react';
+
+// ─── Media type detection ──────────────────────────────────────────────────
+function detectMediaType(mimeType: string): 'photo' | 'video' | 'music' | 'document' {
+  if (mimeType.startsWith('image/')) return 'photo';
+  if (mimeType.startsWith('video/')) return 'video';
+  if (mimeType.startsWith('audio/')) return 'music';
+  return 'document';
+}
+
+type PostMode = 'photo' | 'video' | 'music' | 'article';
+
+interface ModeConfig {
+  label: string;
+  accept: string;
+  icon: any;
+  color: string;
+  folder: string;
+}
+
+const MODE_CONFIG: Record<PostMode, ModeConfig> = {
+  photo:   { label: 'Photo',   accept: 'image/*',                         icon: Image,    color: 'text-green-500',  folder: 'photos' },
+  video:   { label: 'Vidéo',   accept: 'video/*',                         icon: Film,     color: 'text-blue-500',   folder: 'videos' },
+  music:   { label: 'Musique', accept: 'audio/*',                         icon: Music,    color: 'text-purple-500', folder: 'music' },
+  article: { label: 'Article', accept: '.pdf,.doc,.docx,image/*,video/*', icon: FileText, color: 'text-orange-500', folder: 'documents' },
+};
 
 // ─── Create Post Modal ─────────────────────────────────────────────────────
 function CreatePostModal({
   mode, avatarUrl, name, userId, onClose,
 }: {
-  mode: 'photo' | 'article';
+  mode: PostMode;
   avatarUrl?: string | null;
   name: string;
   userId: string;
@@ -32,8 +56,11 @@ function CreatePostModal({
   const [title, setTitle] = useState('');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+  const [uploadedMime, setUploadedMime] = useState<string | null>(null);
+  const [uploadedName, setUploadedName] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [fileName, setFileName] = useState<string | null>(null);
+
+  const cfg = MODE_CONFIG[mode];
 
   const { data: forums } = useQuery({
     queryKey: ['forums-list'],
@@ -46,12 +73,18 @@ function CreatePostModal({
     mutationFn: () => api.post('/forums/posts', {
       forumId: generalForumId,
       authorId: userId,
-      title: mode === 'article' ? title || 'Article sans titre' : text.slice(0, 60) || 'Photo partagée',
+      title: mode === 'article' ? title || 'Article sans titre' : text.slice(0, 60) || `${cfg.label} partagé(e)`,
       content: text,
-      tags: [mode === 'photo' ? 'photo' : 'article'],
+      tags: [mode],
+      ...(uploadedUrl ? {
+        imageUrl: uploadedUrl,
+        fileType: uploadedMime || undefined,
+        fileName: uploadedName || undefined,
+      } : {}),
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['home-feed'] });
+      qc.invalidateQueries({ queryKey: ['profile-media'] });
       onClose();
     },
     onError: (err: any) => {
@@ -62,23 +95,25 @@ function CreatePostModal({
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setFileName(file.name);
+    setUploadedName(file.name);
+    setUploadedMime(file.type);
 
-    if (mode === 'photo') {
-      setPreviewUrl(URL.createObjectURL(file));
-    }
+    if (file.type.startsWith('image/')) setPreviewUrl(URL.createObjectURL(file));
+    else if (file.type.startsWith('video/')) setPreviewUrl(URL.createObjectURL(file));
 
     setUploading(true);
     const formData = new FormData();
     formData.append('files', file);
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
-      const res = await fetch(`${apiUrl}/uploads/listings`, { method: 'POST', body: formData });
+      const res = await fetch(`${apiUrl}/uploads/${cfg.folder}`, { method: 'POST', body: formData });
       const data = await res.json();
       setUploadedUrl(data.urls?.[0] ?? data.url);
     } catch { /* ignore */ }
     setUploading(false);
   };
+
+  const mediaType = uploadedMime ? detectMediaType(uploadedMime) : null;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
@@ -106,8 +141,6 @@ function CreatePostModal({
 
         {/* Body */}
         <div className="p-5 space-y-3">
-
-          {/* Article title */}
           {mode === 'article' && (
             <input
               value={title}
@@ -117,41 +150,72 @@ function CreatePostModal({
             />
           )}
 
-          {/* Text area */}
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder={mode === 'photo'
-              ? 'Décrivez votre photo…'
-              : 'Rédigez votre article. Partagez vos connaissances, une expérience, un conseil…'}
+            placeholder={
+              mode === 'photo' ? 'Décrivez votre photo…' :
+              mode === 'video' ? 'Décrivez votre vidéo…' :
+              mode === 'music' ? 'Partagez votre musique…' :
+              'Rédigez votre article…'
+            }
             rows={mode === 'article' ? 6 : 3}
             className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none"
           />
 
           {/* Image preview */}
-          {mode === 'photo' && previewUrl && (
+          {uploadedMime?.startsWith('image/') && previewUrl && (
             <div className="relative rounded-xl overflow-hidden border border-border">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={previewUrl} alt="preview" className="w-full max-h-64 object-cover" />
-              <button
-                onClick={() => { setPreviewUrl(null); setUploadedUrl(null); }}
-                className="absolute top-2 right-2 w-7 h-7 bg-black/60 rounded-full flex items-center justify-center hover:bg-black/80 transition"
-              >
+              <button onClick={() => { setPreviewUrl(null); setUploadedUrl(null); setUploadedMime(null); }}
+                className="absolute top-2 right-2 w-7 h-7 bg-black/60 rounded-full flex items-center justify-center">
                 <X className="h-4 w-4 text-white" />
               </button>
             </div>
           )}
 
-          {/* PDF indicator */}
-          {mode === 'article' && fileName && (
+          {/* Video preview */}
+          {uploadedMime?.startsWith('video/') && previewUrl && (
+            <div className="relative rounded-xl overflow-hidden border border-border">
+              <video src={previewUrl} controls className="w-full max-h-64" />
+              <button onClick={() => { setPreviewUrl(null); setUploadedUrl(null); setUploadedMime(null); }}
+                className="absolute top-2 right-2 w-7 h-7 bg-black/60 rounded-full flex items-center justify-center">
+                <X className="h-4 w-4 text-white" />
+              </button>
+            </div>
+          )}
+
+          {/* Audio indicator */}
+          {uploadedMime?.startsWith('audio/') && uploadedName && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-purple-500/10 border border-purple-500/20 rounded-lg text-xs text-purple-400">
+              <Music className="h-4 w-4 shrink-0" />
+              <span className="truncate font-semibold">{uploadedName}</span>
+              {!uploading && uploadedUrl && <Check className="h-3 w-3 ml-auto" />}
+            </div>
+          )}
+
+          {/* Document/PDF indicator */}
+          {mediaType === 'document' && uploadedName && (
             <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg text-xs text-foreground">
               <FileText className="h-4 w-4 text-primary shrink-0" />
-              <span className="truncate">{fileName}</span>
+              <span className="truncate">{uploadedName}</span>
               {uploading && <Loader2 className="h-3 w-3 animate-spin ml-auto" />}
               {!uploading && uploadedUrl && <Check className="h-3 w-3 text-green-500 ml-auto" />}
             </div>
           )}
 
-          {/* Error */}
+          {/* Archive hint */}
+          {uploadedUrl && mediaType && (
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              → Sera archivé dans votre onglet{' '}
+              <span className="text-primary">
+                {mediaType === 'photo' ? 'Photos' : mediaType === 'video' ? 'Vidéos' : mediaType === 'music' ? 'Musique' : 'Documents'}
+              </span>{' '}
+              du profil
+            </p>
+          )}
+
           {submit.isError && (
             <p className="text-xs text-red-500 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg px-3 py-2">
               ⚠ Erreur lors de la publication. Vérifiez que vous êtes connecté.
@@ -161,25 +225,16 @@ function CreatePostModal({
 
         {/* Footer */}
         <div className="px-5 pb-5 flex items-center justify-between gap-3">
-          {/* Upload button */}
           <button
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
             className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:bg-accent hover:text-foreground transition disabled:opacity-50"
           >
-            {mode === 'photo'
-              ? <><Image className="h-4 w-4 text-green-500" /> {previewUrl ? 'Changer la photo' : 'Ajouter une photo'}</>
-              : <><Upload className="h-4 w-4 text-orange-500" /> Joindre un PDF</>}
+            <cfg.icon className={`h-4 w-4 ${cfg.color}`} />
+            {uploadedUrl ? 'Changer le fichier' : `Joindre ${cfg.label.toLowerCase()}`}
           </button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept={mode === 'photo' ? 'image/*' : '.pdf,image/*'}
-            className="hidden"
-            onChange={handleFile}
-          />
+          <input ref={fileRef} type="file" accept={cfg.accept} className="hidden" onChange={handleFile} />
 
-          {/* Submit */}
           <button
             onClick={() => submit.mutate()}
             disabled={submit.isPending || uploading || (!text.trim() && !uploadedUrl)}
@@ -195,12 +250,8 @@ function CreatePostModal({
 }
 
 // ─── Post composer bar ──────────────────────────────────────────────────────
-function PostComposer({
-  avatarUrl, name, userId,
-}: {
-  avatarUrl?: string | null; name: string; userId: string;
-}) {
-  const [modal, setModal] = useState<'photo' | 'article' | null>(null);
+function PostComposer({ avatarUrl, name, userId }: { avatarUrl?: string | null; name: string; userId: string }) {
+  const [modal, setModal] = useState<PostMode | null>(null);
 
   return (
     <>
@@ -211,10 +262,8 @@ function PostComposer({
               ? <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
               : <span className="text-sm font-bold text-primary">{name[0]}</span>}
           </div>
-          <button
-            onClick={() => setModal('article')}
-            className="flex-1 px-4 py-2.5 rounded-full border border-border text-sm text-muted-foreground hover:bg-accent hover:border-foreground/30 transition text-left"
-          >
+          <button onClick={() => setModal('article')}
+            className="flex-1 px-4 py-2.5 rounded-full border border-border text-sm text-muted-foreground hover:bg-accent hover:border-foreground/30 transition text-left">
             Partagez une publication…
           </button>
         </div>
@@ -222,9 +271,11 @@ function PostComposer({
         <div className="flex gap-1">
           {[
             { icon: Image,    label: 'Photo',     color: 'text-green-500',  action: () => setModal('photo') },
+            { icon: Film,     label: 'Vidéo',     color: 'text-blue-500',   action: () => setModal('video') },
+            { icon: Music,    label: 'Musique',   color: 'text-purple-500', action: () => setModal('music') },
             { icon: FileText, label: 'Article',   color: 'text-orange-500', action: () => setModal('article') },
             { icon: Calendar, label: 'Événement', color: 'text-red-500',    action: () => { window.location.href = '/events'; } },
-            { icon: Users,    label: 'Groupe',    color: 'text-blue-500',   action: () => { window.location.href = '/groups'; } },
+            { icon: Users,    label: 'Groupe',    color: 'text-sky-500',    action: () => { window.location.href = '/groups'; } },
           ].map(({ icon: Icon, label, color, action }) => (
             <button key={label} onClick={action}
               className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold text-muted-foreground hover:bg-accent hover:text-foreground transition">
@@ -236,13 +287,7 @@ function PostComposer({
       </div>
 
       {modal && (
-        <CreatePostModal
-          mode={modal}
-          avatarUrl={avatarUrl}
-          name={name}
-          userId={userId}
-          onClose={() => setModal(null)}
-        />
+        <CreatePostModal mode={modal} avatarUrl={avatarUrl} name={name} userId={userId} onClose={() => setModal(null)} />
       )}
     </>
   );
@@ -278,6 +323,7 @@ function FeedItem({ item }: { item: any }) {
       </p>
 
       {item.metadata?.imageUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={getMediaUrl(item.metadata.imageUrl) || item.metadata.imageUrl}
           alt=""
@@ -311,9 +357,9 @@ function RightPanel({ stats }: { stats: any }) {
         <h3 className="text-sm font-bold text-foreground mb-3">Votre activité</h3>
         <div className="space-y-2">
           {[
-            { icon: Eye,          label: 'Vues profil',       value: stats?.profileViews ?? 0 },
-            { icon: TrendingUp,   label: 'Annonces actives',  value: stats?.listings ?? 0 },
-            { icon: GraduationCap,label: 'Sessions mentorat', value: stats?.mentorshipSessions ?? 0 },
+            { icon: Eye,           label: 'Vues profil',       value: stats?.profileViews ?? 0 },
+            { icon: TrendingUp,    label: 'Annonces actives',  value: stats?.listings ?? 0 },
+            { icon: GraduationCap, label: 'Sessions mentorat', value: stats?.mentorshipSessions ?? 0 },
           ].map(({ icon: Icon, label, value }) => (
             <div key={label} className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -344,7 +390,6 @@ function RightPanel({ stats }: { stats: any }) {
         </div>
       </div>
 
-      <AiInsightsWidget />
 
       <p className="text-[10px] text-muted-foreground text-center px-2">
         © 2026 The Communium ·{' '}
@@ -399,8 +444,6 @@ export default function FeedPage() {
   return (
     <div className="max-w-6xl mx-auto">
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4">
-
-        {/* Feed */}
         <div className="space-y-3 min-w-0">
           <OnboardingBanner />
           <PostComposer avatarUrl={avatarUrl} name={name} userId={userId || ''} />
@@ -418,13 +461,11 @@ export default function FeedPage() {
           )}
         </div>
 
-        {/* Right */}
         <div className="hidden lg:block">
           <div className="sticky top-20">
             <RightPanel stats={stats} />
           </div>
         </div>
-
       </div>
     </div>
   );

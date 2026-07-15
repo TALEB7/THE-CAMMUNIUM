@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { ProfileMediaService } from '../profile-media/profile-media.service';
 
 @Injectable()
 export class ForumsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private profileMediaService: ProfileMediaService,
+  ) {}
 
   // ── Forums CRUD ──
 
@@ -57,6 +61,26 @@ export class ForumsService {
     return { posts, total, page, totalPages: Math.ceil(total / limit) };
   }
 
+  async getUserPosts(authorId: string, pageParam: any = 1, limitParam: any = 20) {
+    const page = Number(pageParam) || 1;
+    const limit = Number(limitParam) || 20;
+    const [posts, total] = await Promise.all([
+      this.prisma.forumPost.findMany({
+        where: { authorId, status: 'PUBLISHED' },
+        include: {
+          author: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+          forum: { select: { id: true, name: true, slug: true } },
+          _count: { select: { comments: true, likes: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.forumPost.count({ where: { authorId, status: 'PUBLISHED' } }),
+    ]);
+    return { posts, total, page, totalPages: Math.ceil(total / limit) };
+  }
+
   async getPost(id: string) {
     const post = await this.prisma.forumPost.findUnique({
       where: { id },
@@ -87,7 +111,7 @@ export class ForumsService {
     return post;
   }
 
-  async createPost(data: { forumId: string; authorId: string; title: string; content: string; tags?: string[] }) {
+  async createPost(data: { forumId: string; authorId: string; title: string; content: string; tags?: string[]; imageUrl?: string; fileName?: string; fileType?: string }) {
     const slug = data.title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
@@ -110,7 +134,35 @@ export class ForumsService {
     // Increment forum post count
     await this.prisma.forum.update({ where: { id: data.forumId }, data: { postCount: { increment: 1 } } });
 
+    // Auto-save media attachments to ProfileMedia for social profile tabs
+    if (data.imageUrl) {
+      const mimeType = this.guessMimeType(data.imageUrl, data.fileType);
+      await this.profileMediaService.createMedia({
+        userId: data.authorId,
+        url: data.imageUrl,
+        mimeType,
+        name: data.fileName || undefined,
+        caption: data.content?.slice(0, 200),
+        postId: post.id,
+      });
+    }
+
     return post;
+  }
+
+  /** Guess MIME type from URL extension or explicit fileType */
+  private guessMimeType(url: string, fileType?: string): string {
+    if (fileType) return fileType;
+    const ext = url.split('.').pop()?.toLowerCase() || '';
+    const map: Record<string, string> = {
+      jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png',
+      gif: 'image/gif', webp: 'image/webp', avif: 'image/avif',
+      mp4: 'video/mp4', mov: 'video/quicktime', avi: 'video/avi', webm: 'video/webm',
+      mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg', flac: 'audio/flac',
+      pdf: 'application/pdf', doc: 'application/msword',
+      docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    };
+    return map[ext] || 'application/octet-stream';
   }
 
   async updatePost(id: string, authorId: string, data: { title?: string; content?: string; tags?: string[] }) {

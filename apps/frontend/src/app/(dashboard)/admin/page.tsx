@@ -262,7 +262,11 @@ export default function AdminDashboard() {
                   })
                   .map((u) => (
                     <tr key={u.id} className="border-b border-border hover:bg-accent">
-                      <td className="px-4 py-3 font-medium">{u.firstName} {u.lastName}</td>
+                      <td className="px-4 py-3 font-medium">
+                        {(u.firstName || u.lastName) 
+                          ? `${u.firstName || ""} ${u.lastName || ""}`.trim() 
+                          : (u.email ? u.email.split("@")[0] : "—")}
+                      </td>
                       <td className="px-4 py-3 text-muted-foreground">{u.email}</td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-1 rounded-lg text-xs font-medium ${

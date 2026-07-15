@@ -67,9 +67,6 @@ export class MarketplaceService {
     this.generateAndStoreListingEmbedding(listing).catch((err) =>
       this.logger.warn(`Failed to generate embedding for listing ${listing.id}: ${err.message}`),
     );
-    this.logPriceAnomalyIfFlagged(listing.price, listing.categoryId, listing.id).catch((err) =>
-      this.logger.warn(`Price anomaly check failed for listing ${listing.id}: ${err.message}`),
-    );
 
     return listing;
   }
@@ -264,8 +261,8 @@ export class MarketplaceService {
     const limit = Math.min(dto.limit || 20, 100); // hard cap at 100
     const skip = (page - 1) * limit;
 
-    // Cache popular searches (no free-text queries) for 5 minutes
-    const isCacheable = !dto.q;
+    // Cache popular searches (no free-text queries or specific seller queries) for 5 minutes
+    const isCacheable = !dto.q && !dto.sellerId;
     const cacheKey = isCacheable
       ? `search:${dto.category || ''}:${dto.city || ''}:${dto.condition || ''}:${dto.sort || ''}:${dto.minPrice || ''}:${dto.maxPrice || ''}:${page}:${limit}`
       : null;
@@ -277,6 +274,11 @@ export class MarketplaceService {
     const where: any = {
       status: 'ACTIVE',
     };
+
+    // Seller filter
+    if (dto.sellerId) {
+      where.sellerId = dto.sellerId;
+    }
 
     // Text search
     if (dto.q) {
@@ -532,29 +534,7 @@ export class MarketplaceService {
    * Returns per-review sentiment + an aggregate compound score.
    * Results are cached for 10 minutes (reviews don't change frequently).
    */
-  /**
-   * Run fraud/fake-review detection on all reviews for a listing.
-   * Checks for temporal bursts, duplicate texts, rating anomalies,
-   * and repeat reviewers. Returns a suspicion score + human-readable flags.
-   */
-  async detectReviewFraud(listingId: string): Promise<any> {
-    const reviews = await this.prisma.listingReview.findMany({
-      where: { listingId },
-      select: { id: true, comment: true, rating: true, reviewerId: true, createdAt: true },
-    });
 
-    if (reviews.length === 0) return { is_suspicious: false, anomaly_score: 0, flags: [] };
-
-    const payload = reviews.map((r) => ({
-      text: r.comment ?? '',
-      rating: r.rating,
-      reviewer_id: r.reviewerId,
-      created_at: r.createdAt.toISOString(),
-      listing_id: listingId,
-    }));
-
-    return this.aiService.detectReviewFraud(payload, listingId);
-  }
 
   async analyzeListingReviewSentiment(listingId: string): Promise<any> {
     const cacheKey = `review_sentiment:${listingId}`;
@@ -602,53 +582,7 @@ export class MarketplaceService {
     return { ...result, categoryId: matched?.id ?? null };
   }
 
-  /**
-   * Check whether a listing's price is a statistical anomaly for its category.
-   * Accepts either a listing id (fetches price + category from DB) or raw values.
-   */
-  async checkPriceAnomaly(listingId: string): Promise<any> {
-    const listing = await this.prisma.listing.findUnique({
-      where: { id: listingId },
-      select: { price: true, categoryId: true },
-    });
-    if (!listing) throw new NotFoundException('Listing not found');
 
-    const comparables = await this.prisma.listing.findMany({
-      where: { categoryId: listing.categoryId, status: 'ACTIVE', id: { not: listingId } },
-      select: { price: true },
-      take: 100,
-    });
-
-    return this.aiService.detectPriceAnomaly({
-      price: listing.price,
-      comparablePrices: comparables.map((l) => l.price),
-    });
-  }
-
-  private async logPriceAnomalyIfFlagged(
-    price: number,
-    categoryId: string,
-    listingId: string,
-  ): Promise<void> {
-    const comparables = await this.prisma.listing.findMany({
-      where: { categoryId, status: 'ACTIVE', id: { not: listingId } },
-      select: { price: true },
-      take: 100,
-    });
-    const result = await this.aiService.detectPriceAnomaly({
-      price,
-      comparablePrices: comparables.map((l) => l.price),
-    });
-    if (!result) return;
-    if (result.is_anomaly) {
-      this.logger.warn(
-        `Price anomaly detected for listing ${listingId}: ` +
-        `price=${price} direction=${result.direction} ` +
-        `z=${result.z_score} modz=${result.modified_z_score} ` +
-        `market_median=${result.market_median}`,
-      );
-    }
-  }
 
   async predictListingEta(listingId: string, buyerCity?: string): Promise<any> {
     const listing = await this.prisma.listing.findUnique({

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X, ChevronDown, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/lib/auth-client';
+import { useAuth, useUser } from '@/lib/auth-client';
 import { useT } from '@/lib/i18n';
 import {
   LayoutDashboard, User, ShoppingBag, Gavel, Settings, Coins, CreditCard,
@@ -28,6 +28,21 @@ const iconMap: Record<string, any> = {
 
 function useSections() {
   const { t } = useT();
+  const { user } = useUser();
+  const isAdmin = user?.role === 'ADMIN';
+
+  if (isAdmin) {
+    return [
+      {
+        label: t.nav.admin,
+        items: [
+          { name: t.nav.admin, href: '/admin' },
+          { name: t.nav.settings, href: '/settings' },
+        ],
+      },
+    ];
+  }
+
   return [
     {
       label: null,

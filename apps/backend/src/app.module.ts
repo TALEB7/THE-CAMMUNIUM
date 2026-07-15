@@ -26,6 +26,7 @@ import { AiModule } from './ai/ai.module';
 import { CompanyCreationModule } from './company-creation/company-creation.module';
 import { DocumentsModule } from './documents/documents.module';
 import { KycModule } from './kyc/kyc.module';
+import { ProfileMediaModule } from './profile-media/profile-media.module';
 
 
 // Domain aggregates
@@ -68,6 +69,9 @@ import { ContentModule } from './content/content.module';
     CompanyCreationModule,
     DocumentsModule,
     KycModule,
+
+    // Profile Media (social tabs: photos, videos, music, documents)
+    ProfileMediaModule,
 
     // Uploads
     UploadsModule,

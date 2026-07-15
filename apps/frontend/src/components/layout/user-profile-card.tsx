@@ -13,16 +13,25 @@ export function UserProfileCard() {
   const [imgFailed, setImgFailed] = useState(false);
 
   const { data: profile } = useQuery({
-    queryKey: ['my-profile-avatar', user?.id],
+    queryKey: ['profile'],
     queryFn: () => api.get('/profiles/me').then((r) => r.data),
     enabled: !!user?.id,
     staleTime: 60000,
   });
 
-  const firstName = user?.firstName ?? 'Demo';
-  const lastName  = user?.lastName  ?? 'User';
+  const dbFirstName = profile?.firstName || user?.firstName;
+  const dbLastName = profile?.lastName || user?.lastName;
+  const firstName = dbFirstName || 'Demo';
+  const lastName  = dbLastName || 'User';
   const fullName  = `${firstName} ${lastName}`;
   const memberId  = user?.id ? `#${user.id.slice(-6).toUpperCase()}` : '#COM-001';
+
+  const isBusiness =
+    profile?.accountType === 'business' ||
+    profile?.accountType === 'company_creation' ||
+    user?.accountType === 'business' ||
+    user?.accountType === 'company_creation';
+  const displayName = isBusiness ? (profile?.companyName || fullName) : fullName;
 
   const avatarSrc =
     profile?.avatarUrl                 ||
@@ -44,7 +53,7 @@ export function UserProfileCard() {
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={resolvedUrl}
-            alt={fullName}
+            alt={displayName}
             className="h-full w-full object-cover rounded-full"
             onError={() => setImgFailed(true)}
           />
@@ -56,7 +65,7 @@ export function UserProfileCard() {
       {/* Name & ID */}
       <div className="hidden sm:block leading-tight">
         <p className="text-sm font-bold text-foreground font-heading truncate max-w-[120px]">
-          {fullName}
+          {displayName}
         </p>
         <p className="text-[10px] font-medium text-primary dark:text-[#808080] tracking-wider">
           {memberId}

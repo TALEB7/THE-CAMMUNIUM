@@ -56,4 +56,9 @@ export class SearchListingsDto {
   @Min(1)
   @Max(100)
   limit?: number;
+
+  @ApiPropertyOptional({ example: 'usr_123' })
+  @IsOptional()
+  @IsString()
+  sellerId?: string;
 }

@@ -48,7 +48,8 @@ export default function MessagesPage() {
   useEffect(() => {
     if (!user?.id) return;
     const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:4000';
-    const socket = io(`${wsUrl}/messaging`, {
+    const socket = io(`${wsUrl}/chat`, {
+      query: { userId: user.id },
       auth: { userId: user.id },
       transports: ['websocket', 'polling'],
     });

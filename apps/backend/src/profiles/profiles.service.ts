@@ -27,7 +27,7 @@ export class ProfilesService {
       throw new NotFoundException('User not found');
     }
 
-    const profile = user.accountType === 'business' ? user.businessProfile : user.personalProfile;
+    const profile = (user.accountType === 'business' || user.accountType === 'company_creation') ? user.businessProfile : user.personalProfile;
 
     return {
       id: user.id,
@@ -52,13 +52,25 @@ export class ProfilesService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
-    const { workHistory, interests, accountType, avatarUrl, ...profileData } = dto;
+    const {
+      workHistory,
+      interests,
+      accountType,
+      avatarUrl,
+      education,
+      softSkills,
+      languages,
+      ...profileData
+    } = dto;
 
     // Only include defined fields (partial update)
     const updateData: any = {};
     Object.entries(profileData).forEach(([k, v]) => { if (v !== undefined) updateData[k] = v; });
     if (workHistory !== undefined) updateData.workHistory = JSON.parse(JSON.stringify(workHistory));
     if (interests !== undefined) updateData.interests = interests;
+    if (education !== undefined) updateData.education = JSON.parse(JSON.stringify(education));
+    if (softSkills !== undefined) updateData.softSkills = JSON.parse(JSON.stringify(softSkills));
+    if (languages !== undefined) updateData.languages = JSON.parse(JSON.stringify(languages));
 
     const profile = await this.prisma.personalProfile.upsert({
       where: { userId: user.id },
@@ -85,11 +97,26 @@ export class ProfilesService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
-    const { interests, accountType, avatarUrl, ...profileData } = dto;
+    const {
+      interests,
+      accountType,
+      avatarUrl,
+      technicalEquipment,
+      humanResources,
+      events,
+      onlineMeetings,
+      trainingPrograms,
+      ...profileData
+    } = dto;
 
     const updateData: any = {};
     Object.entries(profileData).forEach(([k, v]) => { if (v !== undefined) updateData[k] = v; });
     if (interests !== undefined) updateData.interests = interests;
+    if (technicalEquipment !== undefined) updateData.technicalEquipment = JSON.parse(JSON.stringify(technicalEquipment));
+    if (humanResources !== undefined) updateData.humanResources = JSON.parse(JSON.stringify(humanResources));
+    if (events !== undefined) updateData.events = JSON.parse(JSON.stringify(events));
+    if (onlineMeetings !== undefined) updateData.onlineMeetings = JSON.parse(JSON.stringify(onlineMeetings));
+    if (trainingPrograms !== undefined) updateData.trainingPrograms = JSON.parse(JSON.stringify(trainingPrograms));
 
     const profile = await this.prisma.businessProfile.upsert({
       where: { userId: user.id },
@@ -128,7 +155,7 @@ export class ProfilesService {
       data: { profileViews: { increment: 1 } },
     });
 
-    const profile = user.accountType === 'business' ? user.businessProfile : user.personalProfile;
+    const profile = (user.accountType === 'business' || user.accountType === 'company_creation') ? user.businessProfile : user.personalProfile;
 
     return {
       id: user.id,

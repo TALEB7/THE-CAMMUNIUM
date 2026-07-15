@@ -13,6 +13,20 @@ import {
   Mail, FileText, FileCheck2,
 } from "lucide-react";
 import { ProfileImageUpload } from "@/components/profile/profile-image-upload";
+import { CITIES } from "@communium/shared";
+
+// Detect a known Moroccan/international city inside a free-text string (e.g. the
+// OCR-extracted address "JNANE L OUARD FES" → "Fès"). Accent/case-insensitive,
+// whole-word match so a residence line resolves to its city.
+const stripDiacritics = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "");
+const detectCity = (text?: string): string => {
+  if (!text) return "";
+  const hay = ` ${stripDiacritics(text).toUpperCase().replace(/[^A-Z\s]/g, " ").replace(/\s+/g, " ")} `;
+  for (const c of CITIES) {
+    if (hay.includes(` ${stripDiacritics(c).toUpperCase()} `)) return c;
+  }
+  return "";
+};
 
 const INTERESTS = [
   "Finance & Investissement", "Immobilier", "Commerce & Import-Export",
@@ -25,21 +39,24 @@ const INTERESTS = [
 ];
 
 const PERSONAL_PLANS = [
-  { id: "personal_free",    name: "Gratuit",  price: "0",   perks: ["Profil complet", "Réseau de contacts", "Marketplace standard"] },
-  { id: "personal_premium", name: "Premium",  price: "0", isRecommended: true,
+  { id: "personal_free",    name: "Gratuit",  price: "0",   unit: "Dhs/An", perks: ["Profil complet", "Réseau de contacts", "Marketplace standard"] },
+  { id: "personal_premium", name: "Premium",  price: "4",   unit: "$/Mois", isRecommended: true,
     perks: ["Badge VIP", "Réductions jusqu'à 90%", "Gagnez des TKS!", "Priorité support"] },
 ];
 
 const BUSINESS_PLANS = [
-  { id: "business_free",    name: "Pack Standard",    price: "0",    perks: ["Page Entreprise", "Listing standard", "Visibilité locale"] },
-  { id: "business_premium", name: "Pack Premium",     price: "4",  isRecommended: true,
+  { id: "business_free",    name: "Pack Standard",    price: "0",    unit: "Dhs/An", perks: ["Page Entreprise", "Listing standard", "Visibilité locale"] },
+  { id: "business_premium", name: "Pack Premium",     price: "4",    unit: "$/Mois", isRecommended: true,
     perks: ["Ligne directe business", "Partenariats investis", "Accès marchés publics", "Matchmaking"] },
-  { id: "company_creation", name: "Création Société", price: "37",
+];
+
+const COMPANY_CREATION_PLANS = [
+  { id: "company_creation", name: "Création Société", price: "37",   unit: "Dhs/An", isRecommended: true,
     perks: ["Accompagnement complet", "Domiciliation", "Business Premium inclus"] },
 ];
 
-const STEP_LABELS_PERSONAL = ["Type", "Identité", "Coordonnées", "Intérêts", "Offre", "Confirmation"];
-const STEP_LABELS_BUSINESS = ["Type", "Identité", "Coordonnées", "Intérêts", "Vérification", "Offre", "Confirmation"];
+const STEP_LABELS_PERSONAL = ["Type", "Identité & Coordonnées", "Intérêts", "Offre", "Confirmation"];
+const STEP_LABELS_BUSINESS = ["Type", "Identité & Coordonnées", "Intérêts", "Vérification", "Offre", "Confirmation"];
 
 const BUSINESS_ROLES = [
   "CEO / Directeur Général", "CFO / Directeur Financier", "COO / Directeur des Opérations",
@@ -84,7 +101,7 @@ function inputCls(name: string, errors: Record<string, string>) {
 // ─── main component ───────────────────────────────────────────────────────────
 export default function OnboardingPage() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, update } = useSession();
   const { user, isLoaded } = useUser();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -98,7 +115,7 @@ export default function OnboardingPage() {
     birthday: "", identityType: "cin", identityNumber: "",
     companyName: "", rc: "", creationDate: "",
     role: "", personInCharge: "", companyEmail: "",
-    phone: "", country: "Maroc", city: "", address: "",
+    phone: "", country: "Marocaine", city: "", address: "",
     avatarUrl: "", selectedPlan: "personal_free",
   });
 
@@ -113,14 +130,16 @@ export default function OnboardingPage() {
   const [kybUploading, setKybUploading] = useState(false);
   const [kybError, setKybError] = useState<string | null>(null);
 
-  const totalSteps = form.accountType === "business" ? 7 : 6;
+  const totalSteps = form.accountType === "business" ? 6 : 5;
   const STEP_LABELS = form.accountType === "business" ? STEP_LABELS_BUSINESS : STEP_LABELS_PERSONAL;
-  const STEP_KYB = form.accountType === "business" ? 5 : -1;
-  const STEP_OFFER = form.accountType === "business" ? 6 : 5;
-  const STEP_CONFIRM = form.accountType === "business" ? 7 : 6;
+  const STEP_KYB = form.accountType === "business" ? 4 : -1;
+  const STEP_OFFER = form.accountType === "business" ? 5 : 4;
+  const STEP_CONFIRM = form.accountType === "business" ? 6 : 5;
+
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    if (isLoaded && user) {
+    if (isLoaded && user && !initialized) {
       const type = (user as any).accountType || "personal";
       setForm((p) => ({
         ...p,
@@ -130,8 +149,9 @@ export default function OnboardingPage() {
         phone: (user as any).phone || "",
         selectedPlan: type === "business" ? "business_free" : "personal_free",
       }));
+      setInitialized(true);
     }
-  }, [isLoaded, user]);
+  }, [isLoaded, user, initialized]);
 
   const field = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const name = e.target.name;
@@ -159,17 +179,17 @@ export default function OnboardingPage() {
         if (!form.lastName.trim())       errs.lastName       = "Le nom de famille est requis";
         if (!form.birthday)              errs.birthday       = "La date de naissance est requise";
         if (!form.identityNumber.trim()) errs.identityNumber = "Le numéro de pièce d'identité est requis";
-      } else {
+      } else if (form.accountType === "business") {
         if (!form.companyName.trim())  errs.companyName  = "Le nom de l'entreprise est requis";
         if (!form.rc.trim())           errs.rc           = "Le numéro RC est requis";
         if (!form.creationDate)        errs.creationDate = "La date de création est requise";
+      } else if (form.accountType === "company_creation") {
+        if (!form.companyName.trim())  errs.companyName  = "Le nom du projet d'entreprise est requis";
       }
-    }
 
-    if (s === 3) {
       if (!form.phone.trim())   errs.phone   = "Le numéro de téléphone est requis";
       if (!form.city.trim())    errs.city    = "La ville est requise";
-      if (!form.country.trim()) errs.country = "Le pays est requis";
+      if (!form.country.trim()) errs.country = "La nationalité est requise";
     }
 
     if (s === STEP_KYB && form.accountType === "business") {
@@ -237,9 +257,13 @@ export default function OnboardingPage() {
         lastName:       json.surname?.trim()      || p.lastName,
         birthday:       formattedBday             || p.birthday,
         identityNumber: json.card_number?.toUpperCase()?.trim() || p.identityNumber,
-        address:        json.address?.trim()      || p.address,
+        // Nationalité (le champ affiche la nationalité, ex. "Marocaine")
         country:        json.nationality?.trim()  || p.country,
-        city:           json.birth_place?.trim()  || p.city || (json.address ? json.address.split(",")[0] : ""),
+        // Détecte la ville depuis l'adresse extraite (ex. "JNANE L OUARD FES" → "Fès"),
+        // à défaut depuis le lieu de naissance, puis en dernier recours dans le texte OCR
+        // brut complet (robuste si l'adresse/lieu sont mal lus). L'adresse elle-même reste
+        // à saisir par l'utilisateur.
+        city:           detectCity(json.address) || detectCity(json.birth_place) || detectCity(json.ocr_text) || p.city,
       }));
       setFieldErrors({});
       setExtractSuccess(true);
@@ -276,6 +300,7 @@ export default function OnboardingPage() {
         }
       }
 
+      await update();
       router.push("/dashboard");
       router.refresh();
     } catch (err: any) {
@@ -328,7 +353,7 @@ export default function OnboardingPage() {
                   items: ["Page entreprise officielle", "Gestion d'équipe", "Accès marchés & appels d'offres"],
                 },
               ].map(({ value, icon: Icon, title, desc, items }) => {
-                const sel = form.accountType === value;
+                const sel = form.accountType === value || (value === "business" && form.accountType === "company_creation");
                 return (
                   <button
                     key={value}
@@ -336,7 +361,7 @@ export default function OnboardingPage() {
                     onClick={() =>
                       setForm((p) => ({
                         ...p,
-                        accountType: value,
+                        accountType: value === "business" ? "business" : "personal",
                         selectedPlan: value === "business" ? "business_free" : "personal_free",
                       }))
                     }
@@ -358,7 +383,7 @@ export default function OnboardingPage() {
                     <p className="text-xs text-gray-500 dark:text-white/40 mb-4">{desc}</p>
                     <ul className="space-y-1.5">
                       {items.map((item) => (
-                        <li key={item} className="flex items-center gap-2 text-xs text-gray-600 dark:text-white/50">
+                        <li key={item} className="flex items-center gap-2 text-xs text-gray-600 dark:text-white/55">
                           <CheckCircle2 className={`h-3.5 w-3.5 shrink-0 ${sel ? "text-[#C8102E]" : "text-gray-300 dark:text-white/20"}`} />
                           {item}
                         </li>
@@ -369,13 +394,55 @@ export default function OnboardingPage() {
               })}
             </div>
 
+            {(form.accountType === "business" || form.accountType === "company_creation") && (
+              <div className="p-5 rounded-2xl bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-white/[0.08] space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                <p className="text-xs font-extrabold text-[#C8102E] dark:text-[#E8233E] uppercase tracking-wider">
+                  Option de création de l'entreprise
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setForm((p) => ({ ...p, accountType: "business", selectedPlan: "business_free" }))}
+                    className={`p-4 rounded-xl border text-left transition-all ${
+                      form.accountType === "business"
+                        ? "border-[#C8102E] bg-[#C8102E]/5 shadow-sm"
+                        : "border-gray-200 dark:border-white/[0.08] bg-white dark:bg-[#13141a] hover:border-gray-300 dark:hover:border-white/20"
+                    }`}
+                  >
+                    <div className="font-bold text-sm text-gray-900 dark:text-white mb-1">
+                      Entreprise existante
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-white/40">
+                      J'ai déjà un numéro de Registre de Commerce (RC) et des statuts.
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setForm((p) => ({ ...p, accountType: "company_creation", selectedPlan: "company_creation" }))}
+                    className={`p-4 rounded-xl border text-left transition-all ${
+                      form.accountType === "company_creation"
+                        ? "border-[#C8102E] bg-[#C8102E]/5 shadow-sm"
+                        : "border-gray-200 dark:border-white/[0.08] bg-white dark:bg-[#13141a] hover:border-gray-300 dark:hover:border-white/20"
+                    }`}
+                  >
+                    <div className="font-bold text-sm text-gray-900 dark:text-white mb-1">
+                      Création d'entreprise (37 Dhs/An)
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-white/40">
+                      Je souhaite être accompagné pour créer légalement ma société.
+                    </p>
+                  </button>
+                </div>
+              </div>
+            )}
+
             <button onClick={() => setStep(2)} className={nextBtn}>
               Continuer <ArrowRight className="h-4 w-4" />
             </button>
           </div>
         );
 
-      // ── STEP 2 — Identité ───────────────────────────────────────────────────
+      // ── STEP 2 — Identité & Coordonnées ─────────────────────────────────────
       case 2:
         return (
           <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-400">
@@ -384,12 +451,12 @@ export default function OnboardingPage() {
                 <User className="h-6 w-6 text-[#C8102E]" />
               </div>
               <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white mb-1">
-                {form.accountType === "personal" ? "Votre identité" : "Identité de l'entreprise"}
+                {form.accountType === "personal" ? "Votre identité & Coordonnées" : "Identité & Coordonnées de l'entreprise"}
               </h2>
               <p className="text-gray-500 dark:text-white/40 text-sm">
                 {form.accountType === "personal"
-                  ? "Renseignez vos informations telles qu'elles figurent sur votre pièce d'identité"
-                  : "Renseignez les informations légales de votre entreprise"}
+                  ? "Renseignez vos informations d'identité et de contact (extraites automatiquement depuis votre CIN)"
+                  : "Renseignez les informations légales et de contact de votre entreprise"}
               </p>
             </div>
 
@@ -440,13 +507,15 @@ export default function OnboardingPage() {
                   <div>
                     <label className={lbl}>Prénom <span className="text-[#C8102E]">*</span></label>
                     <input name="firstName" value={form.firstName} onChange={field}
-                      className={inputCls("firstName", fieldErrors)} placeholder="Prénom" />
+                      readOnly={form.accountType === "personal"}
+                      className={`${inputCls("firstName", fieldErrors)} ${form.accountType === "personal" ? "opacity-60 cursor-not-allowed bg-gray-50 dark:bg-white/5" : ""}`} placeholder="Prénom" />
                     <FieldError msg={fieldErrors.firstName} />
                   </div>
                   <div>
                     <label className={lbl}>Nom <span className="text-[#C8102E]">*</span></label>
                     <input name="lastName" value={form.lastName} onChange={field}
-                      className={inputCls("lastName", fieldErrors)} placeholder="Nom de famille" />
+                      readOnly={form.accountType === "personal"}
+                      className={`${inputCls("lastName", fieldErrors)} ${form.accountType === "personal" ? "opacity-60 cursor-not-allowed bg-gray-50 dark:bg-white/5" : ""}`} placeholder="Nom de famille" />
                     <FieldError msg={fieldErrors.lastName} />
                   </div>
                 </div>
@@ -456,7 +525,8 @@ export default function OnboardingPage() {
                   <div className="relative">
                     <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#C8102E]/50 pointer-events-none" />
                     <input name="birthday" type="date" value={form.birthday} onChange={field}
-                      className={`${inputCls("birthday", fieldErrors)} pl-10`} />
+                      readOnly={form.accountType === "personal"}
+                      className={`${inputCls("birthday", fieldErrors)} pl-10 ${form.accountType === "personal" ? "opacity-60 cursor-not-allowed bg-gray-50 dark:bg-white/5" : ""}`} />
                   </div>
                   <FieldError msg={fieldErrors.birthday} />
                 </div>
@@ -465,7 +535,8 @@ export default function OnboardingPage() {
                   <div>
                     <label className={lbl}>Type de pièce</label>
                     <select name="identityType" value={form.identityType} onChange={field}
-                      className={`${inp} cursor-pointer appearance-none`}>
+                      disabled={form.accountType === "personal"}
+                      className={`${inp} cursor-pointer appearance-none ${form.accountType === "personal" ? "opacity-60 cursor-not-allowed bg-gray-50 dark:bg-white/5" : ""}`}>
                       <option value="cin">CIN</option>
                       <option value="passport">Passeport</option>
                     </select>
@@ -475,7 +546,8 @@ export default function OnboardingPage() {
                     <div className="relative">
                       <Hash className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#C8102E]/50 pointer-events-none" />
                       <input name="identityNumber" value={form.identityNumber} onChange={field}
-                        className={`${inputCls("identityNumber", fieldErrors)} pl-10 uppercase`}
+                        readOnly={form.accountType === "personal"}
+                        className={`${inputCls("identityNumber", fieldErrors)} pl-10 uppercase ${form.accountType === "personal" ? "opacity-60 cursor-not-allowed bg-gray-50 dark:bg-white/5" : ""}`}
                         placeholder="BE 123456" />
                     </div>
                     <FieldError msg={fieldErrors.identityNumber} />
@@ -485,33 +557,87 @@ export default function OnboardingPage() {
             ) : (
               <>
                 <div>
-                  <label className={lbl}>Nom de l'entreprise <span className="text-[#C8102E]">*</span></label>
+                  <label className={lbl}>
+                    {form.accountType === "company_creation" ? "Nom du projet d'entreprise" : "Nom de l'entreprise"} <span className="text-[#C8102E]">*</span>
+                  </label>
                   <div className="relative">
                     <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#C8102E]/50 pointer-events-none" />
                     <input name="companyName" value={form.companyName} onChange={field}
-                      className={`${inputCls("companyName", fieldErrors)} pl-10`} placeholder="Société SARL" />
+                      className={`${inputCls("companyName", fieldErrors)} pl-10`} 
+                      placeholder={form.accountType === "company_creation" ? "Ex: My Future Startup" : "Société SARL"} />
                   </div>
                   <FieldError msg={fieldErrors.companyName} />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className={lbl}>Date de création <span className="text-[#C8102E]">*</span></label>
-                    <input name="creationDate" type="date" value={form.creationDate} onChange={field}
-                      className={inputCls("creationDate", fieldErrors)} />
-                    <FieldError msg={fieldErrors.creationDate} />
-                  </div>
-                  <div>
-                    <label className={lbl}>Numéro RC <span className="text-[#C8102E]">*</span></label>
-                    <div className="relative">
-                      <Hash className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#C8102E]/50 pointer-events-none" />
-                      <input name="rc" value={form.rc} onChange={field}
-                        className={`${inputCls("rc", fieldErrors)} pl-10`} placeholder="12345" />
+                {form.accountType === "business" && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={lbl}>Date de création <span className="text-[#C8102E]">*</span></label>
+                      <input name="creationDate" type="date" value={form.creationDate} onChange={field}
+                        className={inputCls("creationDate", fieldErrors)} />
+                      <FieldError msg={fieldErrors.creationDate} />
                     </div>
-                    <FieldError msg={fieldErrors.rc} />
+                    <div>
+                      <label className={lbl}>Numéro RC <span className="text-[#C8102E]">*</span></label>
+                      <div className="relative">
+                        <Hash className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#C8102E]/50 pointer-events-none" />
+                        <input name="rc" value={form.rc} onChange={field}
+                          className={`${inputCls("rc", fieldErrors)} pl-10`} placeholder="12345" />
+                      </div>
+                      <FieldError msg={fieldErrors.rc} />
+                    </div>
                   </div>
-                </div>
+                )}
               </>
             )}
+
+            {/* Coordonnées communes */}
+            <div className="border-t border-gray-100 dark:border-white/[0.06] pt-5 space-y-4">
+              <p className="text-[11px] font-extrabold text-[#C8102E] dark:text-[#E8233E] uppercase tracking-widest">
+                Coordonnées de contact
+              </p>
+
+              <div>
+                <label className={lbl}>Téléphone <span className="text-[#C8102E]">*</span></label>
+                <div className="relative">
+                  <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#C8102E]/50 pointer-events-none" />
+                  <input name="phone" value={form.phone} onChange={field}
+                    className={`${inputCls("phone", fieldErrors)} pl-10`} placeholder="+212 6 00 00 00 00" />
+                </div>
+                <FieldError msg={fieldErrors.phone} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={lbl}>Ville <span className="text-[#C8102E]">*</span></label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#C8102E]/50 pointer-events-none" />
+                    <input name="city" value={form.city} onChange={field}
+                      readOnly={form.accountType === "personal"}
+                      className={`${inputCls("city", fieldErrors)} pl-10 ${form.accountType === "personal" ? "opacity-60 cursor-not-allowed bg-gray-50 dark:bg-white/5" : ""}`} placeholder="Casablanca" />
+                  </div>
+                  <FieldError msg={fieldErrors.city} />
+                </div>
+                <div>
+                  <label className={lbl}>Nationalité <span className="text-[#C8102E]">*</span></label>
+                  <div className="relative">
+                    <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#C8102E]/50 pointer-events-none" />
+                    <input name="country" value={form.country} onChange={field}
+                      readOnly={form.accountType === "personal"}
+                      className={`${inputCls("country", fieldErrors)} pl-10 ${form.accountType === "personal" ? "opacity-60 cursor-not-allowed bg-gray-50 dark:bg-white/5" : ""}`} placeholder="Marocaine" />
+                  </div>
+                  <FieldError msg={fieldErrors.country} />
+                </div>
+              </div>
+
+              <div>
+                <label className={lbl}>Adresse complète</label>
+                <div className="relative">
+                  <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#C8102E]/50 pointer-events-none" />
+                  <input name="address" value={form.address} onChange={field}
+                    className={`${inp} pl-10`} placeholder="Quartier, Rue, Numéro, Étage..." />
+                </div>
+              </div>
+            </div>
 
             {Object.keys(fieldErrors).length > 0 && (
               <div className="flex items-center gap-2 p-3 bg-red-500/8 border border-red-500/20 rounded-xl">
@@ -533,82 +659,8 @@ export default function OnboardingPage() {
           </div>
         );
 
-      // ── STEP 3 — Coordonnées ────────────────────────────────────────────────
+      // ── STEP 3 — Intérêts ───────────────────────────────────────────────────
       case 3:
-        return (
-          <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-400">
-            <div className="text-center">
-              <div className="inline-flex p-3.5 rounded-2xl bg-[#C8102E]/10 mb-3">
-                <MapPin className="h-6 w-6 text-[#C8102E]" />
-              </div>
-              <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white mb-1">Vos coordonnées</h2>
-              <p className="text-gray-500 dark:text-white/40 text-sm">
-                Ces informations permettent aux membres de vous localiser et vous contacter
-              </p>
-            </div>
-
-            <div>
-              <label className={lbl}>Téléphone <span className="text-[#C8102E]">*</span></label>
-              <div className="relative">
-                <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#C8102E]/50 pointer-events-none" />
-                <input name="phone" value={form.phone} onChange={field}
-                  className={`${inputCls("phone", fieldErrors)} pl-10`} placeholder="+212 6 00 00 00 00" />
-              </div>
-              <FieldError msg={fieldErrors.phone} />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={lbl}>Ville <span className="text-[#C8102E]">*</span></label>
-                <div className="relative">
-                  <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#C8102E]/50 pointer-events-none" />
-                  <input name="city" value={form.city} onChange={field}
-                    className={`${inputCls("city", fieldErrors)} pl-10`} placeholder="Casablanca" />
-                </div>
-                <FieldError msg={fieldErrors.city} />
-              </div>
-              <div>
-                <label className={lbl}>Pays <span className="text-[#C8102E]">*</span></label>
-                <div className="relative">
-                  <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#C8102E]/50 pointer-events-none" />
-                  <input name="country" value={form.country} onChange={field}
-                    className={`${inputCls("country", fieldErrors)} pl-10`} />
-                </div>
-                <FieldError msg={fieldErrors.country} />
-              </div>
-            </div>
-
-            <div>
-              <label className={lbl}>Adresse complète</label>
-              <div className="relative">
-                <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#C8102E]/50 pointer-events-none" />
-                <input name="address" value={form.address} onChange={field}
-                  className={`${inp} pl-10`} placeholder="Quartier, Rue, Numéro, Étage..." />
-              </div>
-            </div>
-
-            {Object.keys(fieldErrors).length > 0 && (
-              <div className="flex items-center gap-2 p-3 bg-red-500/8 border border-red-500/20 rounded-xl">
-                <AlertCircle className="h-4 w-4 text-red-400 shrink-0" />
-                <p className="text-xs text-red-400 font-semibold">
-                  Veuillez remplir tous les champs obligatoires avant de continuer.
-                </p>
-              </div>
-            )}
-
-            <div className="flex gap-3 pt-1">
-              <button onClick={() => setStep(2)} className={backBtn}>
-                <ChevronLeft className="h-4 w-4" /> Précédent
-              </button>
-              <button onClick={() => goNext(3)} className={nextBtn}>
-                Continuer <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        );
-
-      // ── STEP 4 — Intérêts ───────────────────────────────────────────────────
-      case 4:
         return (
           <div className="space-y-7 animate-in fade-in slide-in-from-bottom-4 duration-400">
             <div className="text-center">
@@ -654,10 +706,10 @@ export default function OnboardingPage() {
             )}
 
             <div className="flex gap-3 pt-1">
-              <button onClick={() => setStep(3)} className={backBtn}>
+              <button onClick={() => setStep(2)} className={backBtn}>
                 <ChevronLeft className="h-4 w-4" /> Précédent
               </button>
-              <button onClick={() => setStep(5)} disabled={form.interests.length < 3} className={nextBtn}>
+              <button onClick={() => setStep(4)} disabled={form.interests.length < 3} className={nextBtn}>
                 Continuer <ArrowRight className="h-4 w-4" />
               </button>
             </div>
@@ -767,7 +819,7 @@ export default function OnboardingPage() {
             )}
 
             <div className="flex gap-3 pt-1">
-              <button onClick={() => setStep(4)} className={backBtn}>
+              <button onClick={() => setStep(3)} className={backBtn}>
                 <ChevronLeft className="h-4 w-4" /> Précédent
               </button>
               <button onClick={() => goNext(STEP_KYB)} className={nextBtn}>
@@ -779,7 +831,10 @@ export default function OnboardingPage() {
 
       // ── STEP — Offre ──────────────────────────────────────────────────────
       case STEP_OFFER: {
-        const plans = form.accountType === "personal" ? PERSONAL_PLANS : BUSINESS_PLANS;
+        const plans =
+          form.accountType === "personal" ? PERSONAL_PLANS :
+          form.accountType === "company_creation" ? COMPANY_CREATION_PLANS :
+          BUSINESS_PLANS;
         return (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-400">
             <div className="text-center">
@@ -790,7 +845,7 @@ export default function OnboardingPage() {
               <p className="text-gray-500 dark:text-white/40 text-sm">Accédez à des privilèges exclusifs dès aujourd'hui</p>
             </div>
 
-            <div className={`grid grid-cols-1 ${plans.length > 2 ? "lg:grid-cols-3" : "md:grid-cols-2"} gap-3`}>
+            <div className={`grid grid-cols-1 ${plans.length === 2 ? "md:grid-cols-2" : plans.length > 2 ? "lg:grid-cols-3" : "max-w-xs mx-auto"} gap-3`}>
               {plans.map((plan) => {
                 const sel = form.selectedPlan === plan.id;
                 return (
@@ -808,7 +863,7 @@ export default function OnboardingPage() {
                     <h3 className="font-bold text-base text-gray-900 dark:text-white mb-1">{plan.name}</h3>
                     <div className="flex items-baseline gap-1 mb-3">
                       <span className="text-2xl font-extrabold text-gray-900 dark:text-white">{plan.price}</span>
-                      <span className="text-[11px] text-gray-400 dark:text-white/30 uppercase">Dhs/An</span>
+                      <span className="text-[11px] text-gray-400 dark:text-white/30 uppercase">{(plan as any).unit || "Dhs/An"}</span>
                     </div>
                     <ul className="space-y-1.5 mb-4 flex-1">
                       {plan.perks.map((perk, i) => (
@@ -828,7 +883,7 @@ export default function OnboardingPage() {
             </div>
 
             <div className="flex gap-3 pt-1">
-              <button onClick={() => setStep(form.accountType === "business" ? STEP_KYB : 4)} className={backBtn}>
+              <button onClick={() => setStep(form.accountType === "business" ? STEP_KYB : 3)} className={backBtn}>
                 <ChevronLeft className="h-4 w-4" /> Précédent
               </button>
               <button onClick={() => setStep(STEP_CONFIRM)} className={nextBtn}>
@@ -868,7 +923,8 @@ export default function OnboardingPage() {
                       { label: "Fonction", value: form.role || "—" },
                       { label: "Documents KYB", value: `${KYB_DOCS.filter((d) => kybFiles[d.key]).length}/${KYB_DOCS.length}` },
                     ]),
-                { label: "Ville", value: [form.city, form.country].filter(Boolean).join(", ") || "—" },
+                { label: "Ville", value: form.city || "—" },
+                { label: "Nationalité", value: form.country || "—" },
                 { label: "Téléphone", value: form.phone || "—" },
                 { label: "Intérêts", value: `${form.interests.length} sélectionné${form.interests.length > 1 ? "s" : ""}` },
               ].map(({ label: l, value }) => (

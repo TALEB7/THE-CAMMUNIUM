@@ -9,9 +9,11 @@ import type { EtaResult, SentimentResult } from '@/api/marketplace.api';
 interface EtaCardProps {
   eta: EtaResult | undefined;
   isLoading: boolean;
+  listingCity?: string;
+  buyerCity?: string;
 }
 
-export function ListingEtaCard({ eta, isLoading }: EtaCardProps) {
+export function ListingEtaCard({ eta, isLoading, listingCity, buyerCity }: EtaCardProps) {
   if (isLoading) {
     return (
       <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-3">
@@ -20,16 +22,23 @@ export function ListingEtaCard({ eta, isLoading }: EtaCardProps) {
       </div>
     );
   }
-  if (!eta) return null;
+  
+  const isSameCity =
+    !!listingCity &&
+    !!buyerCity &&
+    listingCity.trim().toLowerCase() === buyerCity.trim().toLowerCase();
 
-  const label =
-    eta.eta_days === 0
-      ? 'Aujourd\'hui'
-      : eta.eta_days === 1
-      ? '24 – 48 heures'
-      : `${eta.eta_days} jours environ`;
+  if (!eta && !isSameCity) return null;
 
-  const confidencePct = Math.round(eta.confidence * 100);
+  const label = isSameCity
+    ? 'Moins de 24h'
+    : eta?.eta_days === 0
+    ? 'Aujourd\'hui'
+    : eta?.eta_days === 1
+    ? '24 – 48 heures'
+    : `${eta?.eta_days} jours environ`;
+
+  const confidencePct = isSameCity ? 95 : eta ? Math.round(eta.confidence * 100) : 70;
 
   return (
     <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm">
@@ -37,7 +46,9 @@ export function ListingEtaCard({ eta, isLoading }: EtaCardProps) {
       <div>
         <p className="font-medium text-blue-800">Livraison estimée : {label}</p>
         <p className="text-xs text-blue-600 mt-0.5">
-          Fiabilité {confidencePct}% · basé sur la ville, catégorie et état
+          {isSameCity
+            ? 'Fiabilité 95% · Livraison locale (même ville)'
+            : `Fiabilité ${confidencePct}% · basé sur la ville, catégorie et état`}
         </p>
       </div>
     </div>
@@ -100,10 +111,25 @@ interface AiInsightsProps {
   sentiment: SentimentResult | undefined;
   sentimentLoading: boolean;
   reviewCount: number;
+  listingCity?: string;
+  buyerCity?: string;
 }
 
-export function ListingAiInsights({ eta, etaLoading, sentiment, sentimentLoading, reviewCount }: AiInsightsProps) {
-  const showEta = etaLoading || !!eta;
+export function ListingAiInsights({
+  eta,
+  etaLoading,
+  sentiment,
+  sentimentLoading,
+  reviewCount,
+  listingCity,
+  buyerCity,
+}: AiInsightsProps) {
+  const isSameCity =
+    !!listingCity &&
+    !!buyerCity &&
+    listingCity.trim().toLowerCase() === buyerCity.trim().toLowerCase();
+
+  const showEta = etaLoading || !!eta || isSameCity;
   const showSentiment = sentimentLoading || (!!sentiment && reviewCount > 0);
   if (!showEta && !showSentiment) return null;
 
@@ -116,7 +142,12 @@ export function ListingAiInsights({ eta, etaLoading, sentiment, sentimentLoading
             Insights IA
           </span>
         </div>
-        <ListingEtaCard eta={eta} isLoading={etaLoading} />
+        <ListingEtaCard
+          eta={eta}
+          isLoading={etaLoading}
+          listingCity={listingCity}
+          buyerCity={buyerCity}
+        />
         <ListingSentimentCard sentiment={sentiment} isLoading={sentimentLoading} reviewCount={reviewCount} />
       </CardContent>
     </Card>

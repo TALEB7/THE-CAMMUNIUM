@@ -76,12 +76,12 @@ export default function SignInPage() {
               <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-white/25" />
               <input
                 name="email" type="email" required autoComplete="email"
-                defaultValue="demo@thecommunium.com" placeholder="vous@exemple.com"
+                placeholder="vous@exemple.com"
                 className={`${inp} pl-10 pr-4`}
               />
             </div>
           </div>
-
+ 
           {/* Password */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
@@ -96,7 +96,7 @@ export default function SignInPage() {
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-white/25" />
               <input
                 name="password" type={showPassword ? "text" : "password"} required
-                autoComplete="current-password" defaultValue="password123" placeholder="••••••••"
+                autoComplete="current-password" placeholder="••••••••"
                 className={`${inp} pl-10 pr-10`}
               />
               <button type="button" onClick={() => setShowPassword(!showPassword)}
@@ -105,7 +105,7 @@ export default function SignInPage() {
               </button>
             </div>
           </div>
-
+ 
           {/* Submit */}
           <button type="submit" disabled={loading}
             className="w-full h-11 mt-1 flex items-center justify-center gap-2 rounded-xl font-bold text-sm transition-all

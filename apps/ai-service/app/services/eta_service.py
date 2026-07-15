@@ -120,12 +120,25 @@ _DISTANCE_MATRIX: dict[tuple[int, int], float] = {
 }
 
 
-def _distance_multiplier(seller_tier: int, buyer_tier: Optional[int]) -> tuple[float, str]:
+def _distance_multiplier(
+    seller_city: Optional[str],
+    buyer_city: Optional[str],
+    seller_tier: int,
+    buyer_tier: Optional[int],
+) -> tuple[float, str]:
     if buyer_tier is None:
         # Assume average buyer = tier 1 (most buyers are in major cities)
         buyer_tier = 1
-    if seller_tier == buyer_tier and seller_tier == 1:
-        return 1.0, "same_major_city"
+
+    # Same city → local / express delivery
+    if (
+        seller_city
+        and buyer_city
+        and seller_city.strip().lower() == buyer_city.strip().lower()
+    ):
+        return 1.0, "same_city"
+
+    # Different cities — use the tier-based distance matrix
     mult = _DISTANCE_MATRIX.get((seller_tier, buyer_tier), 3.0)
     zone = f"tier{seller_tier}_to_tier{buyer_tier}"
     return mult, zone
@@ -198,7 +211,9 @@ def predict_eta(
     base_hours, cat_label    = _category_base_hours(category_name)
     seller_tier               = _city_tier(seller_city)
     buyer_tier_val            = _city_tier(buyer_city) if buyer_city else None
-    dist_mult, dist_label     = _distance_multiplier(seller_tier, buyer_tier_val)
+    dist_mult, dist_label     = _distance_multiplier(
+        seller_city, buyer_city, seller_tier, buyer_tier_val,
+    )
     cond_key                  = (condition or "good").lower()
     cond_mult                 = _CONDITION_MULT.get(cond_key, 1.15)
     seller_mod, seller_label  = _seller_modifier(seller_listing_count)

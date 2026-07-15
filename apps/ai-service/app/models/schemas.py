@@ -89,12 +89,14 @@ class MentorMatchResponse(BaseModel):
 # ── Price Suggestion ─────────────────────────────────────────────────
 
 class PriceSuggestionRequest(BaseModel):
-    title: str
-    description: str
+    title: str = ""
+    description: str = ""
     category: str
-    condition: str                        # NEW | LIKE_NEW | GOOD | FAIR | POOR
+    condition: str                        # NEW | LIKE_NEW | GOOD | FAIR | POOR (also accepts used_good, etc.)
     city: Optional[str] = None
     comparable_prices: List[float] = []   # recent sold prices for same category
+    original_price: Optional[float] = None  # retail/new price — used for cold-start depreciation
+    age_months: Optional[int] = None        # item age in months — drives depreciation
 
 
 class PriceSuggestionResponse(BaseModel):
@@ -139,17 +141,6 @@ class SentimentResponse(BaseModel):
     avg_compound: float
 
 
-# ── Fraud / Anomaly Detection ────────────────────────────────────────
-
-class ReviewAnomalyRequest(BaseModel):
-    reviews: List[dict]   # {text, rating, reviewer_id, created_at, listing_id}
-    listing_id: str
-
-
-class ReviewAnomalyResponse(BaseModel):
-    is_suspicious: bool
-    anomaly_score: float   # [0, 1] — higher = more suspicious
-    flags: List[str]       # e.g. ["burst_reviews", "rating_outlier", "duplicate_text"]
 
 
 # ── Churn Prediction ─────────────────────────────────────────────────
@@ -219,32 +210,7 @@ class EtaResponse(BaseModel):
     breakdown: EtaBreakdown
 
 
-# ── Demand / Trending ────────────────────────────────────────────────
 
-class DemandDataPoint(BaseModel):
-    category: str
-    date: str           # ISO date
-    view_count: int
-    search_count: int
-    listing_count: int
-
-
-class TrendingRequest(BaseModel):
-    data_points: List[DemandDataPoint]
-    top_k: int = 10
-    window_days: int = 7
-
-
-class TrendingCategory(BaseModel):
-    category: str
-    trend_score: float
-    growth_rate: float   # % change vs previous window
-    avg_daily_views: float
-
-
-class TrendingResponse(BaseModel):
-    trending: List[TrendingCategory]
-    computed_at: str
 
 
 # ── Personalized Recommendations (MMR) ──────────────────────────────
@@ -258,7 +224,7 @@ class RecommendationRequest(BaseModel):
     user_embedding: List[float]
     candidates: List[RecommendationCandidate]
     top_k: int = 20
-    diversity_lambda: float = 0.3
+    diversity_lambda: float = 0.4
 
 
 class RecommendationItem(BaseModel):
@@ -272,18 +238,3 @@ class RecommendationResponse(BaseModel):
     recommendations: List[RecommendationItem]
 
 
-# ── Price Anomaly Detection ──────────────────────────────────────────
-
-class PriceAnomalyRequest(BaseModel):
-    price: float
-    comparable_prices: List[float]
-
-
-class PriceAnomalyResponse(BaseModel):
-    is_anomaly: bool
-    z_score: float
-    modified_z_score: float
-    market_median: float
-    market_mean: float
-    direction: str      # NORMAL | TOO_LOW | TOO_HIGH
-    confidence: float

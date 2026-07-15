@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, LayoutDashboard, ShoppingBag, Bell, User } from 'lucide-react';
+import { Home, LayoutDashboard, ShoppingBag, Bell, User, Shield, Settings } from 'lucide-react';
 import { useNotificationBadge } from '@/hooks/use-notification-badge';
 import { cn } from '@/lib/utils';
+import { useUser } from '@/lib/auth-client';
 
 const items = [
   { href: '/feed',      icon: Home,          label: 'Accueil' },
@@ -17,6 +18,36 @@ const items = [
 export function MobileBottomNav() {
   const pathname = usePathname();
   const { unread } = useNotificationBadge();
+  const { user } = useUser();
+
+  if (user?.role === 'ADMIN') {
+    return (
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border lg:hidden">
+        <div className="flex items-center">
+          <Link
+            href="/admin"
+            className={cn(
+              'flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors relative',
+              pathname === '/admin' ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            <Shield className="h-5 w-5" />
+            <span className="text-[10px] font-medium">Admin</span>
+          </Link>
+          <Link
+            href="/settings"
+            className={cn(
+              'flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors relative',
+              pathname === '/settings' ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            <Settings className="h-5 w-5" />
+            <span className="text-[10px] font-medium">Settings</span>
+          </Link>
+        </div>
+      </nav>
+    );
+  }
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border lg:hidden">

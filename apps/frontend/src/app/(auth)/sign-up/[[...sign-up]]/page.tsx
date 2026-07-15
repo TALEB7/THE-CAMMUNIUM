@@ -31,8 +31,6 @@ export default function SignUpPage() {
     const formData = new FormData(e.currentTarget);
     const email     = formData.get("email")     as string;
     const password  = formData.get("password")  as string;
-    const firstName = formData.get("firstName") as string;
-    const lastName  = formData.get("lastName")  as string;
     const phone     = formData.get("phone")     as string;
 
     try {
@@ -41,7 +39,7 @@ export default function SignUpPage() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, firstName, lastName, accountType, phone }),
+          body: JSON.stringify({ email, password, accountType, phone }),
         },
       );
       if (!regRes.ok) {
@@ -100,24 +98,6 @@ export default function SignUpPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <label className={lbl}>Prénom</label>
-              <div className="relative">
-                <User className={`absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 ${icon}`} />
-                <input name="firstName" type="text" required autoComplete="given-name"
-                  placeholder="Jean" className={`${inp} pl-10`} />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <label className={lbl}>Nom</label>
-              <div className="relative">
-                <User className={`absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 ${icon}`} />
-                <input name="lastName" type="text" required autoComplete="family-name"
-                  placeholder="Dupont" className={`${inp} pl-10`} />
-              </div>
-            </div>
-          </div>
 
           <div className="space-y-1.5">
             <label className={lbl}>Email</label>

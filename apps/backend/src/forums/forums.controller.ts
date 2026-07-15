@@ -58,6 +58,15 @@ export class ForumsController {
     return this.service.getForumPosts(forumId, page, limit);
   }
 
+  @Get('posts/user/:authorId')
+  getUserPosts(
+    @Param('authorId') authorId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.service.getUserPosts(authorId, page, limit);
+  }
+
   @Get('posts/:id')
   getPost(@Param('id') id: string) {
     return this.service.getPost(id);
